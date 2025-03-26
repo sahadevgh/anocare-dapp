@@ -8,21 +8,21 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
- * @title VerifiedPractitionerNFT
+ * @title VerifiedClinicianNFT
  * @dev This contract mints non-transferable NFTs to practitioners
  *      who have been manually verified by the Anocare team.
  *      Only the contract owner (you or a DAO admin) can mint.
  */
-contract VerifiedPractitionerNFT is ERC721Enumerable, Ownable {
+contract VerifiedClinicianNFT is ERC721Enumerable, Ownable {
     // Tracks the next token ID to be minted
     uint256 public nextTokenId;
 
     /**
      * @dev Constructor sets up the NFT collection
-     * - Name: "VerifiedPractitionerNFT"
+     * - Name: "VerifiedClinicianNFT"
      * - Symbol: "VPT"
      */
-    constructor() ERC721("VerifiedPractitionerNFT", "VPT") Ownable(msg.sender) {}
+    constructor() ERC721("VerifiedClinicianNFT", "VPT") Ownable(msg.sender) {}
 
     /**
      * @dev Mints a new NFT to the specified address.

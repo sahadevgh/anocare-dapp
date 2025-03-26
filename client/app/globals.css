@@ -1,26 +1,147 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Breakpoints */
+  --breakpoint-sm: 480px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+
+  /* Brand colors */
+  --color-primary: #3E4A89;
+  --color-accent: #65C9C2;
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+
+  /* Light theme colors */
+  --color-impbg: #100b00;
+  --color-imptext: #f3f4f6;
+  --color-bg: #F9FAFB;
+  --color-text: #1F2937;
+  --color-surface: #ffffff;
+  --color-border: #E5E7EB;
+
+  /* Dark theme colors */
+  --color-bg-dark: #1a202c;
+  --color-text-dark: #e2e8f0;
+  --color-surface-dark: #2D3748;
+  --color-border-dark: #4A5568;
+
+  /* Font */
+  --font-display: 'Satoshi', sans-serif;
+
+  /* Typography sizes */
+  --font-xs: 0.75rem;
+  --font-sm: 0.875rem;
+  --font-base: 1rem;
+  --font-lg: 1.125rem;
+  --font-xl: 1.25rem;
+  --font-2xl: 1.5rem;
+  --font-3xl: 1.875rem;
+
+  /* Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-full: 9999px;
+
+  /* Shadow */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.15);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Base styles */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-display);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-size: var(--font-base);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-primary);
+}
+h1 { font-size: var(--font-3xl); }
+h2 { font-size: var(--font-2xl); }
+h3 { font-size: var(--font-xl); }
+
+h1, h2 {
+  font-weight: bold;
+}
+
+h3, h4 {
+  font-weight: 400;
+}
+
+h5, h6 {
+  font-weight: 200;
+}
+
+/* Links */
+a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+a:hover {
+  color: var(--color-accent);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #2c366a;
+}
+
+.btn-accent {
+  background-color: var(--color-accent);
+  color: white;
+}
+.btn-accent:hover {
+  background-color: #4aa9a1;
+}
+
+/* Dark mode overrides */
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: var(--color-bg-dark);
+    color: var(--color-text-dark);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--color-accent);
+  }
+
+  a {
+    color: var(--color-accent);
+  }
+
+  .btn-primary {
+    background-color: var(--color-surface-dark);
+    color: var(--color-text-dark);
+  }
+
+  .btn-primary:hover {
+    background-color: var(--color-border-dark);
+  }
 }
