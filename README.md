@@ -1,4 +1,3 @@
-```markdown
 # Anocare — Private AI Health Consults, Built on Trust and Web3
 
 Anocare is an open-source decentralized application (dApp) that empowers users to consult AI privately and get referred to verified clinicians — **without compromising their identity**.
