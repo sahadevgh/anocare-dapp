@@ -1,0 +1,11 @@
+{
+    "name": "Verified Clinician Badge",
+    "description": "This NFT verifies a trusted clinician on Anocare.",
+    "image": "ipfs://bafkreicmjaxk7lskarsu2o7lyhqhcyie7dmslgj5go7qf4tcm6evftmmcm/badge-verified-clinician.png",
+    "attributes": [
+      { "trait_type": "Role", "value": "Practitioner" },
+      { "trait_type": "Badge Type", "value": "Verification" },
+      { "trait_type": "Verified", "value": "Yes" }
+    ]
+  }
+  

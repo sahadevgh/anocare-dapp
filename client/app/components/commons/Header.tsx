@@ -1,17 +1,19 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import React, { useState, useEffect } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Bars3Icon,
   ChatBubbleOvalLeftEllipsisIcon,
   ShieldCheckIcon,
   HomeIcon,
   XMarkIcon,
-} from '@heroicons/react/24/outline';
-import { ConnectBtn } from './WalletConnect';
+} from "@heroicons/react/24/outline";
+import { useAccount } from "wagmi";
+import { emojiAvatarForAddress } from "@/app/lib/emojiAvatarForAddress";
+import { ConnectBtn } from "../WalletConnect";
 
 type HeaderMenuLink = {
   label: string;
@@ -21,26 +23,25 @@ type HeaderMenuLink = {
 
 export const menuLinks: HeaderMenuLink[] = [
   {
-    label: 'Home',
-    href: '/',
+    label: "Home",
+    href: "/",
     icon: <HomeIcon className="h-5 w-5" />,
   },
   {
-    label: 'Consult AI',
-    href: '/consult',
+    label: "Consult AI",
+    href: "/consult",
     icon: <ChatBubbleOvalLeftEllipsisIcon className="h-5 w-5" />,
   },
   {
-    label: 'Clinicians',
-    href: '/verified-clinicians',
+    label: "Clinicians",
+    href: "/verified-clinicians",
     icon: <ShieldCheckIcon className="h-5 w-5" />,
   },
   {
-    label: 'Join as Clinician',
-    href: '/apply-clinician',
+    label: "Join as Clinician",
+    href: "/apply-clinician",
     icon: <ShieldCheckIcon className="h-5 w-5" />,
   },
-  
 ];
 
 export const HeaderMenuLinks = () => {
@@ -57,15 +58,19 @@ export const HeaderMenuLinks = () => {
               href={href}
               passHref
               className={`btn  ${
-                isActive 
-                  ? 'bg-accent font-medium dark:bg-primary/50' 
-                  : 'btn-primary'
+                isActive
+                  ? "bg-accent font-medium dark:bg-primary/50"
+                  : "btn-primary"
               }`}
             >
-              <span className={`${isActive ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+              <span
+                className={`${
+                  isActive ? "text-white" : "text-gray-500 dark:text-gray-400"
+                }`}
+              >
                 {icon}
               </span>
-              <span className='text-white'>{label}</span>
+              <span className="text-white">{label}</span>
             </Link>
           </li>
         );
@@ -78,6 +83,10 @@ export const Header = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const pathname = usePathname();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { isConnecting, address, isConnected, chain } = useAccount();
+  const { color: backgroundColor, emoji } = emojiAvatarForAddress(
+    address ?? ""
+  );
 
   console.log(isLoggedIn);
 
@@ -118,8 +127,12 @@ export const Header = () => {
                 />
               </div>
               <div className="flex flex-col">
-                <span className="font-bold dark:text-white text-black">Anocare</span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">Private AI Health Consults</span>
+                <span className="font-bold dark:text-white text-black">
+                  Anocare
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  Private AI Health Consults
+                </span>
               </div>
             </Link>
 
@@ -132,20 +145,27 @@ export const Header = () => {
 
             {/* User profile/actions */}
             <div className="flex items-center">
-            <div className="flex items-center ">
-          <div>
-           <ConnectBtn
+              <div className="flex items-center ">
+                <div>
+                  <ConnectBtn
             setIsLoggedIn={setIsLoggedIn}
+            backgroundColor={backgroundColor}
+            emoji={emoji}
+            isConnected={isConnected}
+            isConnecting={isConnecting}
+            chain={chain || []}
+            address={address}
            />
-          </div>
-      </div>
+
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Mobile menu */}
-      <div className={`lg:hidden ${isDrawerOpen ? 'block' : 'hidden'}`}>
+      <div className={`lg:hidden ${isDrawerOpen ? "block" : "hidden"}`}>
         <div className="space-y-1 px-2 pb-3 pt-2">
           <ul className="flex flex-col space-y-2">
             <HeaderMenuLinks />

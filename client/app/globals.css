@@ -56,7 +56,6 @@
 /* Base styles */
 body {
   font-family: var(--font-display);
-  background-color: var(--color-bg);
   color: var(--color-text);
   font-size: var(--font-base);
   line-height: 1.6;
@@ -124,7 +123,7 @@ a:hover {
 /* Dark mode overrides */
 @media (prefers-color-scheme: dark) {
   body {
-    background-color: var(--color-bg-dark);
+    background-color: #000000;
     color: var(--color-text-dark);
   }
 

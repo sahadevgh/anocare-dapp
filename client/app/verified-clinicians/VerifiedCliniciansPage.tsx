@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Header } from '../components/Header';
 import Clinicians from '../components/clinicians/Clinicians';
+import { Header } from '../components/commons/Header';
 
 const clinicians = [
   {

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useAccount } from "wagmi";
 import ApplyClinician from "../components/clinicians/ApplyClinician";
-import { Header } from "../components/Header";
+import { Header } from "../components/commons/Header";
 
 export default function ApplyClinicianPage() {
   const { address } = useAccount();
@@ -12,16 +12,24 @@ export default function ApplyClinicianPage() {
     alias: string;
     specialty: string;
     region: string;
+    experience?: string;
+    credentials?: string;
+    licenseIssuer?: string;
     message?: string;
+    license?: File | null;
   }>({
     address: address || "",
     alias: "",
     specialty: "",
     region: "",
+    experience: "",
+    credentials: "",
+    licenseIssuer: "",
     message: "",
+    license: null,
   });
 
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const handleChange = (
@@ -30,43 +38,73 @@ export default function ApplyClinicianPage() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!form.alias || !form.specialty || !form.region) return;
-
+  
+    let fileBase64 = "";
+    if (form.license) {
+      fileBase64 = await convertFileToBase64(form.license);
+    }
+  
+    const payload = {
+      ...form,
+      address: address || "",
+      file: fileBase64,
+    };
+  
     try {
-      setLoading(true);
-      // Replace this with your contract interaction logic or API
-      
-      console.log(form);
-      await fetch('/api/apply', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+      const res = await fetch("/api/apply", {
+        method: "POST",
+        body: JSON.stringify(payload),
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
-      
-      setSubmitted(true);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+  
+      const data = await res.json();
+      if (data.success) {
+        setSubmitted(true);
+      } else {
+        alert(data.error || "Submission failed.");
+      }
+    } catch (error) {
+      console.error("Error submitting application:", error);
     }
   };
+  
 
   return (
     <div>
       <Header />
-      <ApplyClinician
-        submitted={submitted}
-        setSubmitted={setSubmitted}
-        form={form}
-        setForm={setForm}
-        loading={loading}
-        handleChange={handleChange}
-        handleSubmit={handleSubmit}
-        address={address}
-      />
+      {
+        address ? (
+          <ApplyClinician
+          submitted={submitted}
+          setSubmitted={setSubmitted}
+          form={form}
+          setForm={setForm}
+          loading={false}
+          handleChange={handleChange}
+          handleSubmit={handleSubmit}
+          address={address}
+        />
+        ) : (
+          <div className="text-center text-lg mt-4">
+            Please connect your wallet to apply.
+          </div>
+        ) 
+      }
+     
     </div>
   );
 }
