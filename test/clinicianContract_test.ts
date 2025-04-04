@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { PractitionerRegistry, VerifiedPractitionerNFT } from "../typechain-types";
 
-describe("PractitionerRegistry", function () {
+describe("ClinicianContract", function () {
   let registry: PractitionerRegistry;
   let nft: VerifiedPractitionerNFT;
 
@@ -20,7 +20,7 @@ describe("PractitionerRegistry", function () {
   
     await nft.connect(owner).mint(practitioner.address);
   
-    const Registry = await ethers.getContractFactory("PractitionerRegistry");
+    const Registry = await ethers.getContractFactory("ClinicianContract");
     registry = (await Registry.deploy(nftAddress)) as PractitionerRegistry;
     await registry.waitForDeployment();
   });

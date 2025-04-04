@@ -54,4 +54,11 @@ contract VerifiedClinicianNFT is ERC721, Ownable {
         require(tokenOwners[tokenId] != address(0), "NFT does not exist");
         return baseTokenURI;
     }
+
+    /**
+     * @dev Returns true if the clinician is verified.
+     */
+    function isVerified(address clinician) external view returns (bool) {
+        return balanceOf(clinician) > 0;
+    }
 }

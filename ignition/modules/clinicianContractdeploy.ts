@@ -3,11 +3,11 @@
 
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
-const AnocareModule = buildModule("PractitionerRegistryModule", (m) => {
+const AnocareModule = buildModule("ClinicianContractModule", (m) => {
 
   const VerifiedPractitionerNFT_ADDRESS = "";
 
-  const practitionerRegistry = m.contract("PractitionerRegistry", [VerifiedPractitionerNFT_ADDRESS]);
+  const practitionerRegistry = m.contract("ClinicianContract", [VerifiedPractitionerNFT_ADDRESS]);
 
   return { practitionerRegistry };
 });
