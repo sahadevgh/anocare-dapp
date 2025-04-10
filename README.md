@@ -62,7 +62,7 @@ We’re building toward a world where:
 ## Getting Started
 
 ```bash
-git clone https://github.com/anocare/anocare-dapp
+git clone https://github.com/sahadevgh/anocare-dapp
 cd anocare-dapp
 npm install
 cp .env.example .env.local
@@ -108,5 +108,5 @@ Ghana | Web3 Educator | Privacy Advocate
 ## Stay Connected
 
 - **Twitter**: [@anocare_ai](https://twitter.com/anocare_ai)  
-- **GitHub Discussions**: [github.com/anocare/anocare-dapp/discussions](https://github.com/anocare/anocare-dapp/discussions)  
+- **Telegram Discussions**: [https://t.me/+eE9KX6qGL2YxYjVk](https://t.me/+eE9KX6qGL2YxYjVk)  
 - **Documentation**: Coming soon
