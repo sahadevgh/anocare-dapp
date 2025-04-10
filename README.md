@@ -85,7 +85,7 @@ You’re welcome to fork, contribute, and build with it. If you’re reusing the
 
 If you believe in ethical AI, decentralized public goods, and privacy-respecting platforms—we welcome your input.
 
-- Check `CONTRIBUTING.md`
+- Check [CONTRIBUTING.md](CONTRIBUTING.md)
 - Look for good first issues
 - Join GitHub Discussions to share thoughts and ideas
 
