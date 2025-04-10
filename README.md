@@ -1,60 +1,65 @@
-# Anocare — Private AI Health Consults, Built on Trust and Web3
+# Anocare — Private AI Health Consultations on Web3
 
-Anocare is an open-source decentralized application (dApp) that empowers users to consult AI privately and get referred to verified clinicians — **without compromising their identity**.
+**Anocare** is a decentralized application (dApp) designed to provide private access to health consultations through AI and verified **AnoPros**—without collecting personal data or compromising user identity.
 
-I am building a platform that bridges the gap between **trustless technology and trusted care**.
+**AnoPro** (short for "Anocare Professional") refers to a verified healthcare expert on the Anocare platform. They are issued a blockchain-based credential (NFT) that allows them to consult with users securely.
+
+This platform bridges the gap between trustless blockchain technology and trusted health care delivery.
 
 ---
 
 ## Why Anocare?
 
-Most health tech platforms store your data, track your usage, and sell your history.  
-**Anocare doesn’t.** I believe access to health care should come with **autonomy and privacy**.
+Most health platforms collect personal data, track usage, and often share that information. Anocare does not.
 
-With Anocare:
-- Users can chat anonymously with an AI health assistant.
-- Verified clinicians receive NFT-based credentials to accept consultations.
-- No centralized entity stores or controls your private health data.
+Anocare is built on the belief that healthcare access should be private, anonymous, and secure. Users are not required to give up their identity or history to receive help.
 
-We don’t just say “Web3 for good.” We’re living it.
+---
+
+## What You Can Do with Anocare
+
+- Chat anonymously with an AI-powered health assistant.
+- Apply as an AnoPro and receive a blockchain-based NFT credential after verification.
+- View and consult verified AnoPros with no central database tracking your interactions.
+- Store files and activity history on decentralized storage using **Web3.Storage** or **w3up-client**—only if you choose to.
 
 ---
 
 ## Vision
 
-A world where:
-- Everyone has access to **private health consultations**, powered by AI.
-- Clinicians are **verified through decentralized NFTs**.
-- Consult history is **opt-in, encrypted, or never stored**.
-- The protocol is **transparent, community-driven, and uncensorable**.
+We’re building toward a world where:
+
+- Everyone can get private health advice anytime, from anywhere.
+- AnoPros are verified with decentralized credentials (NFTs).
+- Health history is optional, encrypted, and never collected without consent.
+- The system is transparent, censorship-resistant, and community-owned.
 
 ---
 
 ## Features
 
-- AI-Powered Health Chat (anonymous)
-- Clinician Application Flow
-- NFT-Based Clinician Verification
-- Decentralized Profile Registry
-- Privacy-first Consultation Logic
-- MongoDB + IPFS/Arweave Storage Support
-- Modular Smart Contracts (Solidity)
-- Built with Next.js, Tailwind CSS v4, RainbowKit
+- **AI Health Assistant** – Offers anonymous health consultations.
+- **AnoPro Verification** – Professionals apply and receive an NFT-based identity once approved.
+- **Privacy-Centered Design** – No central server holds user data.
+- **Consultation Workflow** – Built with user privacy and AnoPro reliability in mind.
+- **Encrypted File Support** – Optionally store license docs or consultation history using Web3.Storage or w3up-client.
+- **Decentralized Identity** – Verified AnoPros are registered on-chain.
+- **Built with Modern Tools** – Next.js, Tailwind CSS v4, MongoDB, RainbowKit, and Solidity.
 
 ---
 
-## Developer Guide
+## Tech Stack
 
-### Tech Stack
+- **Frontend**: Next.js (App Router), Tailwind CSS v4
+- **Smart Contracts**: Solidity + Hardhat
+- **Blockchain Tools**: RainbowKit, Wagmi
+- **Backend**: Node.js, MongoDB Atlas
+- **Decentralized Storage**: IPFS via Web3.Storage or w3up-client
+- **Security & Encryption**: End-to-end encryption using Lit Protocol (for file sharing)
 
-- **Next.js App Router**
-- **Solidity + Hardhat**
-- **MongoDB Atlas**
-- **Tailwind CSS v4 (CSS-first theme)**
-- **RainbowKit + Wagmi**
-- **Optional IPFS/Arweave + E2EE**
+---
 
-### Getting Started
+## Getting Started
 
 ```bash
 git clone https://github.com/anocare/anocare-dapp
@@ -64,36 +69,37 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Set your MongoDB URI and other keys in `.env.local`.
+Then update `.env.local` with your MongoDB URI, IPFS keys, and other config.
 
 ---
 
 ## License
 
-This project is licensed under the **MIT License**.  
-You’re free to fork, contribute, and use — but **please respect the mission**.  
-**If you clone this, don’t just copy code — continue the care.**
+Anocare is licensed under the MIT License.
+
+You’re welcome to fork, contribute, and build with it. If you’re reusing the code, please build with the same values this project stands for: privacy, transparency, and accessible care.
 
 ---
 
 ## Contributing
 
-I welcome anyone who believes in **privacy-preserving care**, **Web3 public goods**, and **ethical AI**.
+If you believe in ethical AI, decentralized public goods, and privacy-respecting platforms—we welcome your input.
 
-- Check out [`CONTRIBUTING.md`](CONTRIBUTING.md)
-- Start with `good first issue` tags
-- Join our discussions for ideas and architecture
+- Check `CONTRIBUTING.md`
+- Look for good first issues
+- Join GitHub Discussions to share thoughts and ideas
 
 ---
 
-## A Note from the Creator
+## From the Creator
 
-> I am not building Anocare to make noise.  
-> I am building it because people deserve **private access to support** — without surveillance or gatekeepers.
+Anocare was not created as a trend or buzzword project.
 
-If you’re a developer, advisor, grantor, or just someone who cares — I invite you to build with me.
+It was born out of the need for people—especially in underserved communities—to access health advice without fear, judgment, or surveillance.
 
-— **[Sahabia Yakubu](https://github.com/sahadevgh)**  
+If you're a developer, supporter, grantor, or someone who believes in fair access to care, you're invited to help shape this platform.
+
+**— Sahabia Yakubu**  
 Founder, Anocare  
 Ghana | Web3 Educator | Privacy Advocate
 
@@ -101,8 +107,6 @@ Ghana | Web3 Educator | Privacy Advocate
 
 ## Stay Connected
 
-- Twitter: [@anocare_ai](https://twitter.com/anocare_ai)
-- GitHub Discussions: [GitHub.com/anocare/anocare-dapp/discussions](#)
-- Docs: Coming soon...
-
-```
+- **Twitter**: [@anocare_ai](https://twitter.com/anocare_ai)  
+- **GitHub Discussions**: [github.com/anocare/anocare-dapp/discussions](https://github.com/anocare/anocare-dapp/discussions)  
+- **Documentation**: Coming soon
