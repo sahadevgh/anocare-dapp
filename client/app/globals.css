@@ -84,7 +84,6 @@ h5, h6 {
 
 /* Links */
 a {
-  color: var(--color-primary);
   text-decoration: underline;
 }
 a:hover {
@@ -131,9 +130,6 @@ a:hover {
     color: var(--color-accent);
   }
 
-  a {
-    color: var(--color-accent);
-  }
 
   .btn-primary {
     background-color: var(--color-surface-dark);

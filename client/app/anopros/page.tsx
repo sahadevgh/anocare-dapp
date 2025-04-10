@@ -1,5 +1,5 @@
 import React from 'react'
-import VerifiedCliniciansPage from './VerifiedCliniciansPage'
+import VerifiedCliniciansPage from './VerifiedAnoProsPage'
 
 function page() {
   return (

@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import Clinicians from '../components/clinicians/Clinicians';
 import { Header } from '../components/commons/Header';
+import AnoProDisplay from '../components/anopros/AnoProDisplay';
 
-const clinicians = [
+const anopros = [
   {
     alias: 'Dr. Nova',
     specialty: 'Mental Health',
@@ -25,11 +25,13 @@ const clinicians = [
   },
 ];
 
-export default function VerifiedCliniciansPage() {
+export default function VerifiedAnoProsPage() {
   return (
     <div>
         <Header />
-        <Clinicians clinicians={clinicians} />
+        <AnoProDisplay 
+        anopros={anopros}
+         />
     </div>
   );
 }

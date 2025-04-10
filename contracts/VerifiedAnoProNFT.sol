@@ -6,18 +6,18 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 /**
- * @title VerifiedClinicianNFT
- * @dev This contract mints non-transferable NFTs to practitioners
- *      who have been manually verified by the Anocare team.
+ * @title VerifiedAnoProNFT
+ * @dev This contract mints non-transferable NFTs to AnoPros
+ *      who have been manually verified by the AnoPro team.
  */
-contract VerifiedClinicianNFT is ERC721, Ownable {
+contract VerifiedAnoProNFT is ERC721, Ownable {
     uint256 public nextTokenId;
     string private baseTokenURI;
 
     mapping(uint256 => address) private tokenOwners;
 
     constructor(string memory _baseTokenURI)
-        ERC721("VerifiedClinicianNFT", "VPT")
+        ERC721("VerifiedAnoProNFT", "VAP")
         Ownable(msg.sender)
     {
         baseTokenURI = _baseTokenURI;
@@ -56,9 +56,9 @@ contract VerifiedClinicianNFT is ERC721, Ownable {
     }
 
     /**
-     * @dev Returns true if the clinician is verified.
+     * @dev Returns true if the AnoPro is verified.
      */
-    function isVerified(address clinician) external view returns (bool) {
-        return balanceOf(clinician) > 0;
+    function isVerified(address anoPro) external view returns (bool) {
+        return balanceOf(anoPro) > 0;
     }
 }

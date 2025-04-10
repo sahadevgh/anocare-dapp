@@ -33,13 +33,8 @@ export const menuLinks: HeaderMenuLink[] = [
     icon: <ChatBubbleOvalLeftEllipsisIcon className="h-5 w-5" />,
   },
   {
-    label: "Clinicians",
-    href: "/verified-clinicians",
-    icon: <ShieldCheckIcon className="h-5 w-5" />,
-  },
-  {
-    label: "Join as Clinician",
-    href: "/apply-clinician",
+    label: "AnoPros",
+    href: "/anopros",
     icon: <ShieldCheckIcon className="h-5 w-5" />,
   },
 ];

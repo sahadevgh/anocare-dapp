@@ -7,13 +7,12 @@ import {
   ShieldCheckIcon,
   ChatBubbleBottomCenterTextIcon,
   UserGroupIcon,
-  SparklesIcon
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 
 const HeroSection = () => {
   return (
-    <div className="relative bg-gradient-to-br from-primary/5 to-white dark:from-gray-900 dark:to-gray-800 overflow-hidden">
+    <div className="h-screen relative bg-gradient-to-br from-primary/5 to-white dark:from-gray-900 dark:to-gray-800 overflow-hidden">
       {/* Decorative elements */}
       <div className="absolute inset-0 opacity-10 dark:opacity-5">
         <div className="absolute top-0 left-20 w-64 h-64 bg-accent rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob"></div>
@@ -36,7 +35,7 @@ const HeroSection = () => {
             </h1>
             
             <p className="mt-6 text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-lg">
-              Instant access to AI-powered health insights and verified clinicians - all secured by blockchain technology.
+              Instant access to AI-powered health insights and verified anonymity care professionals - all secured by blockchain technology.
             </p>
             
             <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
@@ -96,7 +95,7 @@ const HeroSection = () => {
                   <UserGroupIcon className="h-6 w-6 text-primary" />
                 </div>
                 <div className="ml-4">
-                  <h3 className="text-lg font-semibold">Verified Clinicians</h3>
+                  <h3 className="text-lg font-semibold">Verified AnoPros</h3>
                   <p className="mt-1 text-gray-600 dark:text-gray-400">
                     Connect with certified healthcare professionals on demand.
                   </p>
@@ -122,32 +121,6 @@ const HeroSection = () => {
               </div>
             </motion.div>
           </motion.div>
-        </div>
-      </div>
-
-      {/* Trust indicators */}
-      <div className="bg-gray-50 dark:bg-gray-900/50 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-sm uppercase tracking-wider text-gray-500 mb-6">
-            Trusted By
-          </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-center">
-            {[
-              "HealthTech Awards",
-              "Blockchain Med Alliance",
-              "500+ Clinicians",
-              "10,000+ Users"
-            ].map((item, index) => (
-              <motion.div
-                key={index}
-                whileHover={{ scale: 1.05 }}
-                className="flex items-center justify-center text-gray-700 dark:text-gray-300 font-medium"
-              >
-                <SparklesIcon className="h-4 w-4 text-primary mr-2" />
-                {item}
-              </motion.div>
-            ))}
-          </div>
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 import React from 'react'
-import ClinicianDashboard from '../../components/dashboard/ClinicianDashboard'
+import ClinicianDashboard from '../../components/dashboard/AnoProDashboard'
 import { Header } from '@/app/components/commons/Header'
 
 function page() {

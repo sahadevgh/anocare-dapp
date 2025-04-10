@@ -1,85 +1,97 @@
 import React from "react";
 import { styles } from "@/app/styles/styles";
-import { NFTStorage } from 'nft.storage';
 
-
-interface ClinicianFormData {
-  address: string;
-  alias: string;
-  specialty: string;
-  region: string;
-  message?: string;
-  experience?: string;
-  credentials?: string;
-  availability?: string;
-  licenseCID?: string;
-  licenseIssuer?: string;
-  nationalIdCID?: string;
+interface FileData {
+  file: File;
+  encryptedData?: ArrayBuffer;
+  iv?: Uint8Array;
+  key?: CryptoKey;
+  cid?: string;
+  encryptionKey?: string;
 }
 
-interface ClinicianApplyProps {
+interface AnoProFormData {
+  address: string;
+  alias: string;
+  email: string;
+  specialty: string;
+  region: string;
+  message: string;
+  experience: string;
+  credentials: string;
+  licenseIssuer: string;
+  licenseFile?: FileData | null;
+  nationalIdFile?: FileData | null;
+}
+
+interface AnoProApplyProps {
   submitted: boolean;
   setSubmitted: (value: boolean) => void;
-  setForm: React.Dispatch<React.SetStateAction<ClinicianFormData>>;
-  form: ClinicianFormData;
+  form: AnoProFormData;
   loading: boolean;
   handleChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void;
   handleSubmit: (e: React.FormEvent) => void;
-  address?: string;
+  handleFileUpload: (
+    file: File,
+    field: "licenseFile" | "nationalIdFile"
+  ) => Promise<void>;
+  setShowApplicationForm: (value: boolean) => void;
 }
 
-function ApplyClinician({
-  address,
+function ApplyAnoPro({
   submitted,
   form,
   loading,
   handleChange,
   handleSubmit,
-  setForm
-}: ClinicianApplyProps & { address?: string }) {
-
-  function makeStorageClient() {
-    return new NFTStorage({ token: process.env.NEXT_PUBLIC_NFTSTORAGE_TOKEN! });
-  }
-  
-
-  const handleFileUpload = async (
+  handleFileUpload,
+  setShowApplicationForm
+}: AnoProApplyProps) {
+  const onFileChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
-    field: keyof ClinicianFormData,
-    label: string
+    field: "licenseFile" | "nationalIdFile"
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     try {
-      // Assuming makeStorageClient is imported or available in scope
-      const client = makeStorageClient();
-      const cid = await client.storeBlob(new Blob([file]));
-      setForm((prev) => ({ ...prev, [field]: cid }));
+      await handleFileUpload(file, field);
     } catch (error) {
-      console.error(`${label} upload failed:`, error);
-      // Consider adding error state to show to user
+      console.error(`File upload failed:`, error);
+      alert(
+        `File upload failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
   };
 
   if (submitted) {
     return (
       <div className="p-4 bg-green-100 text-green-800 rounded-md">
-        Your application has been submitted. We will review and get back to
-        you shortly.
+        Your application has been submitted. We will review and get back to you
+        shortly.
       </div>
     );
   }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10">
-      <h1 className={styles.title}>Apply to Become a Verified Clinician</h1>
-      <p className="mb-6 text-[--color-text]">
-        Anocare ensures only qualified clinicians serve on the platform. Submit
-        your credentials and experience to begin the verification process.
-      </p>
+      <div className="mb-6 flex flex-col items-start relative">
+        <h1 className={styles.title}>Apply to Become a Verified AnoPro</h1>
+        <p className="text-text dark:text-gray-400 mb-4">
+          Anocare ensures only qualified AnoPros serve on the platform. Submit
+          your credentials and experience to begin the verification process.
+        </p>
+
+        <div
+          onClick={() => setShowApplicationForm(false)}
+        className="border rounded-3xl px-4 absolute right-0 bottom-0 text-sm text-gray-500 bg-gray-50 dark:bg-gray-800 dark:text-gray-400 border-gray-500/25 shadow-lg cursor-pointer hover:scale-95">
+          Go back
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -95,7 +107,22 @@ function ApplyClinician({
             className={styles.input}
             placeholder="DrHopeful"
             required
-            aria-required="true"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="email" className={styles.label}>
+            Email
+          </label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            value={form.email}
+            onChange={handleChange}
+            className={styles.input}
+            placeholder="user@example.com"
+            required
           />
         </div>
 
@@ -112,7 +139,6 @@ function ApplyClinician({
             className={styles.input}
             placeholder="e.g., Mental Health, Nutrition"
             required
-            aria-required="true"
           />
         </div>
 
@@ -129,7 +155,6 @@ function ApplyClinician({
             className={styles.input}
             placeholder="e.g., West Africa"
             required
-            aria-required="true"
           />
         </div>
 
@@ -141,12 +166,11 @@ function ApplyClinician({
             id="experience"
             name="experience"
             type="text"
-            value={form.experience || ""}
+            value={form.experience}
             onChange={handleChange}
             className={styles.input}
             placeholder="e.g., 5 years"
             required
-            aria-required="true"
           />
         </div>
 
@@ -158,12 +182,11 @@ function ApplyClinician({
             id="credentials"
             name="credentials"
             type="text"
-            value={form.credentials || ""}
+            value={form.credentials}
             onChange={handleChange}
             className={styles.input}
             placeholder="Enter registration/license ID"
             required
-            aria-required="true"
           />
         </div>
 
@@ -176,33 +199,15 @@ function ApplyClinician({
             type="file"
             accept=".pdf,.jpg,.jpeg,.png"
             className={styles.input}
-            onChange={(e) => handleFileUpload(e, "licenseCID", "license")}
+            onChange={(e) => onFileChange(e, "licenseFile")}
             required
-            aria-required="true"
           />
-          {form.licenseCID && (
+          {form.licenseFile && (
             <p className="text-green-600 text-sm mt-2">
-              ✅ Uploaded to IPFS — CID: {form.licenseCID.slice(0, 10)}...
+              ✅ {form.licenseFile.file.name} uploaded successfully
             </p>
           )}
         </div>
-
-        <div>
-          <label htmlFor="licenseIssuer" className={styles.label}>
-            License Issued By
-          </label>
-          <input
-            id="licenseIssuer"
-            name="licenseIssuer"
-            type="text"
-            value={form.licenseIssuer || ""}
-            onChange={handleChange}
-            className={styles.input}
-            placeholder="e.g., Medical and Dental Council - Ghana"
-            required
-            aria-required="true"
-          />
-        </div> 
 
         <div>
           <label htmlFor="nationalIdUpload" className={styles.label}>
@@ -213,52 +218,22 @@ function ApplyClinician({
             type="file"
             accept=".pdf,.jpg,.jpeg,.png"
             className={styles.input}
-            onChange={(e) => handleFileUpload(e, "nationalIdCID", "national-id")}
+            onChange={(e) => onFileChange(e, "nationalIdFile")}
             required
-            aria-required="true"
           />
-          {form.nationalIdCID && (
+          {form.nationalIdFile && (
             <p className="text-green-600 text-sm mt-2">
-              ✅ National ID uploaded — CID: {form.nationalIdCID.slice(0, 10)}...
+              ✅ {form.nationalIdFile.file.name} uploaded successfully
             </p>
           )}
-        </div>
-
-        <div>
-          <label htmlFor="message" className={styles.label}>
-            Motivation
-          </label>
-          <textarea
-            id="message"
-            name="message"
-            value={form.message}
-            onChange={handleChange}
-            className={styles.textarea}
-            placeholder="Why do you want to join Anocare as a verified clinician?"
-            required
-            aria-required="true"
-            rows={5}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="walletAddress" className={styles.label}>
-            Wallet Address
-          </label>
-          <input
-            id="walletAddress"
-            type="text"
-            value={address || "Connect Wallet First"}
-            disabled
-            className={styles.input}
-            title="Wallet Address"
-          />
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className={`btn btn-accent ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`${styles.button} ${
+            loading ? "opacity-50 cursor-not-allowed" : ""
+          }`}
         >
           {loading ? "Submitting..." : "Submit Application"}
         </button>
@@ -267,4 +242,4 @@ function ApplyClinician({
   );
 }
 
-export default ApplyClinician;
+export default ApplyAnoPro;

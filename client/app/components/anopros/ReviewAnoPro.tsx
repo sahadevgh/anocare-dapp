@@ -1,7 +1,17 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { CheckIcon, XMarkIcon, DocumentTextIcon, ClockIcon, UserIcon, AcademicCapIcon, MapPinIcon, BriefcaseIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
+import {
+  CheckIcon,
+  XMarkIcon,
+  DocumentTextIcon,
+  ClockIcon,
+  UserIcon,
+  AcademicCapIcon,
+  MapPinIcon,
+  BriefcaseIcon,
+  ShieldCheckIcon,
+} from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
 import { getContract, VERIFIED_NFT_ADDRESS } from "../constants";
 import { VerifiedClinicianNFT_ABI } from "../contracts/abis";
@@ -28,7 +38,7 @@ interface Applicant {
   submittedAt: string;
 }
 
-const ReviewClinician = () => {
+const ReviewAnoPro = () => {
   const [applications, setApplications] = useState<Applicant[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -49,20 +59,20 @@ const ReviewClinician = () => {
     getApplications();
   }, []);
 
-
   const handleApprove = async (address: string) => {
-    const contract = await getContract(VERIFIED_NFT_ADDRESS, VerifiedClinicianNFT_ABI);
+    const contract = await getContract(
+      VERIFIED_NFT_ADDRESS,
+      VerifiedClinicianNFT_ABI
+    );
     if (!contract) {
       console.error("Contract not loaded");
       return;
     }
     try {
-        // Call the mint function on the contract
-        const tx = await contract.mint(address);
-        await tx.wait();
-        console.log("Minted NFT successfully");
-        
-      // Call the approval API endpoint with the address
+      const tx = await contract.mint(address);
+      await tx.wait();
+      console.log("Minted NFT successfully");
+
       const response = await fetch("/api/approve-applicant", {
         method: "PUT",
         headers: {
@@ -70,9 +80,11 @@ const ReviewClinician = () => {
         },
         body: JSON.stringify({ address }),
       });
-      
+
       if (response.ok) {
-        setApplications(prev => prev.filter(app => app.address !== address));
+        setApplications((prev) =>
+          prev.filter((app) => app.address !== address)
+        );
       } else {
         console.error("Approval failed");
       }
@@ -83,7 +95,6 @@ const ReviewClinician = () => {
 
   const handleReject = async (address: string) => {
     try {
-      // Call your rejection API endpoint
       const response = await fetch("/api/reject-applicant", {
         method: "PUT",
         headers: {
@@ -91,9 +102,11 @@ const ReviewClinician = () => {
         },
         body: JSON.stringify({ address }),
       });
-      
+
       if (response.ok) {
-        setApplications(prev => prev.filter(app => app.address !== address));
+        setApplications((prev) =>
+          prev.filter((app) => app.address !== address)
+        );
       } else {
         console.error("Rejection failed");
       }
@@ -103,12 +116,12 @@ const ReviewClinician = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -128,9 +141,11 @@ const ReviewClinician = () => {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center p-6">
         <DocumentTextIcon className="h-12 w-12 text-gray-400 mb-4" />
-        <h3 className="text-xl font-medium text-gray-900 dark:text-white">No pending applications</h3>
+        <h3 className="text-xl font-medium text-gray-900 dark:text-white">
+          No pending applications
+        </h3>
         <p className="text-gray-500 dark:text-gray-400 mt-1">
-          All clinician applications have been processed
+          All AnoPro applications have been processed
         </p>
         <button
           onClick={getApplications}
@@ -147,10 +162,10 @@ const ReviewClinician = () => {
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
           <h1 className="text-2xl font-bold leading-tight text-gray-900 dark:text-white">
-            Clinician Applications
+            AnoPro Applications
           </h1>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Review and verify new clinician credentials
+            Review and verify new AnoPro credentials
           </p>
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
@@ -253,7 +268,7 @@ const ReviewClinician = () => {
                         Wallet Address
                       </p>
                       <p className="text-sm font-mono text-gray-900 dark:text-white">
-                      {middleEllipsis(app.address, 4)}
+                        {middleEllipsis(app.address, 4)}
                       </p>
                     </div>
                   </div>
@@ -285,7 +300,7 @@ const ReviewClinician = () => {
                 </div>
               )}
 
-                <div className="mt-6">
+              <div className="mt-6">
                 <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                   Status
                 </h4>
@@ -319,4 +334,4 @@ const ReviewClinician = () => {
   );
 };
 
-export default ReviewClinician;
+export default ReviewAnoPro;

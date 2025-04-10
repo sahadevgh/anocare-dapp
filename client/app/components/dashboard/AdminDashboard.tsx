@@ -23,6 +23,8 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     if (isConnected && address?.toLowerCase() === ADMIN_ADDRESS.toLowerCase()) {
+    
+      // TODO: Have to replace this with the actual function
       setTimeout(() => {
         setIsAdmin(true);
         setIsLoading(false);
@@ -62,7 +64,7 @@ const AdminDashboard = () => {
 
   if (!isAdmin) {
     return (
-      <AnimatePresence>
+      <AnimatePresence> 
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

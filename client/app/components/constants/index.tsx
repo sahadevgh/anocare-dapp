@@ -1,5 +1,7 @@
 import { ethers, InterfaceAbi } from "ethers";
 
+export const ANOCARE_CONTRACT_ADDRESS =
+  "0x1234567890abcdef1234567890abcdef12345678";
 export const VERIFIED_NFT_ADDRESS =
   "0x1234567890abcdef1234567890abcdef12345678";
 export const PREMIUM_NFT_ADDRESS =
