@@ -18,11 +18,11 @@ Thanks for your interest in contributing to Anocare!
 
 ## Good First Issues
 
-We label beginner-friendly issues with `good first issue`. Check the [issues page](https://github.com/anocare/anocare-dapp/issues) for ideas.
+We label beginner-friendly issues with `good first issue`. Check the [issues page](https://github.com/sahadevgh/anocare-dapp/issues) for ideas.
 
 ## Community
 
-Discuss ideas and proposals in the [GitHub Discussions](https://github.com/anocare/anocare-dapp/discussions) tab.
+Discuss ideas and proposals in the [GitHub Discussions](https://github.com/sahadevgh/anocare-dapp/discussions) tab.
 
 ---
 
