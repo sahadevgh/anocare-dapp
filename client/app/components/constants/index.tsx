@@ -1,12 +1,12 @@
 import { ethers, InterfaceAbi } from "ethers";
 
 export const ANOCARE_CONTRACT_ADDRESS =
-  "0x1234567890abcdef1234567890abcdef12345678";
+  "0x3454964767B40745003aA9B468466a92c817B3e5";
 export const VERIFIED_NFT_ADDRESS =
-  "0x1234567890abcdef1234567890abcdef12345678";
-export const PREMIUM_NFT_ADDRESS =
-  "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef";
-export const ADMIN_WALLET = "0xfe7B7d58Fb369976B46599e561219342b4bF14F2";
+  "0xCc79ae08fee9107aa02Cc8Aca267ea14bbFbE8B9";
+export const ANOPASS_NFT_ADDRESS =
+  "0xBF531A98e80CdA1eD5d1984b0d7A039177918454";
+export const ADMIN_WALLET = "0x6D108C5084c378E7e74531424f5eeE0b7c34fD59";
 
 export const getContract = async (
   Contract_Address: string,

@@ -6,6 +6,6 @@ export const styles = {
     textarea:
       "w-full border border-[--color-primary] bg-[--color-bg] text-[--color-text] rounded-md px-4 py-2 h-32 resize-none focus:outline-none focus:ring-2 focus:ring-[--color-accent]",
     button:
-      "bg-bg dark:bg-bg-dark px-6 py-2 rounded-md flex transition-all",
+      "bg-bg dark:bg-accent dark:text-black px-6 py-2 rounded-md flex transition-all cursor-pointer font-semibold",
   };
   

@@ -91,6 +91,14 @@ If you believe in ethical AI, decentralized public goods, and privacy-respecting
 
 ---
 
+## Security
+
+To report security vulnerabilities, see our [SECURITY.md](SECURITY.md).
+
+We take privacy and platform security seriously.
+
+-- 
+
 ## From the Creator
 
 Anocare was not created as a trend or buzzword project.

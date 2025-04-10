@@ -1,26 +1,28 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useAccount } from "wagmi";
-import { 
-  CheckCircleIcon, 
+import { useRouter } from "next/navigation";
+import {
+  CheckCircleIcon,
   SparklesIcon,
   ChatBubbleBottomCenterTextIcon,
   UserGroupIcon,
   ArrowRightCircleIcon,
-  ClockIcon
+  ClockIcon,
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { create } from "@web3-storage/w3up-client";
-import { LitNodeClient } from "lit-js-sdk";
-import { encryptFile } from "lit-js-sdk";
 import { Buffer } from "buffer";
 import ApplyAnoPro from "../anopros/ApplyAnoPro";
-import { ANOCARE_CONTRACT_ADDRESS } from "../constants";
+import { ANOCARE_CONTRACT_ADDRESS, ANOPASS_NFT_ADDRESS, getContract } from "../constants";
+import { AnoPassNFTContract_ABI } from "../contracts/abis";
+import { LitNodeClient } from "@lit-protocol/lit-node-client";
+import { LIT_NETWORK } from "@lit-protocol/constants";
+import { encryptFile } from "@lit-protocol/encryption";
+import type { AccessControlConditions } from "@lit-protocol/types"; 
 
 
-// Polyfill for Buffer if needed
 if (typeof window !== "undefined") {
   (window as typeof window & { Buffer: typeof Buffer }).Buffer = Buffer;
 }
@@ -33,12 +35,8 @@ interface Activity {
 }
 
 interface FileData {
-  file: File;
-  encryptedData?: ArrayBuffer;
-  iv?: Uint8Array;
-  key?: CryptoKey;
-  cid?: string;
-  encryptionKey?: string;
+  cid: string;
+  key: string;
 }
 
 interface AnoProFormData {
@@ -50,6 +48,7 @@ interface AnoProFormData {
   message: string;
   experience: string;
   credentials: string;
+  status?: string;
   licenseIssuer: string;
   licenseFile?: FileData | null;
   nationalIdFile?: FileData | null;
@@ -57,12 +56,18 @@ interface AnoProFormData {
 
 const UserDashboard = () => {
   const { address, isConnected } = useAccount();
-  const [hasPremium, setHasPremium] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [applicationStatus, setApplicationStatus] = useState<'not_applied' | 'pending' | 'approved'>('not_applied');
+  const router = useRouter();
+
+  const [hasPremium, setHasPremium] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [applicationStatus, setApplicationStatus] = useState<
+    "not_applied" | "pending" | "approved"
+  >("not_applied");
   const [showApplicationForm, setShowApplicationForm] = useState(false);
   const [litClient, setLitClient] = useState<LitNodeClient | null>(null);
   const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
+  const [submitted, setSubmitted] = useState(false);
+
   const [form, setForm] = useState<AnoProFormData>({
     address: address || "",
     alias: "",
@@ -73,160 +78,233 @@ const UserDashboard = () => {
     credentials: "",
     licenseIssuer: "",
     message: "",
+    status: "pending",
     licenseFile: null,
-    nationalIdFile: null
+    nationalIdFile: null,
   });
-  const [submitted, setSubmitted] = useState(false);
+
+  // Update form state when address changes
+  useEffect(() => {
+    if (address) {
+      setForm((prev) => ({ ...prev, address }));
+    }
+  }, [address]);
+
+  // Fetch user data
+  const fetchUserData = useCallback(async () => {
+    if (!isConnected || !address) return;
+    setLoading(true);
+  
+    try {
+      const contract = await getContract(ANOPASS_NFT_ADDRESS, AnoPassNFTContract_ABI);
+      if (contract) {
+        const isPremium = await contract.isActive(address);
+        setHasPremium(isPremium);
+      }
+  
+      const res = await fetch(`/api/user/${address}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json", // ✅ Fix
+        },
+      });
+  
+      if (!res.ok) {
+        console.log("Failed to fetch user data");
+        return;
+      }
+  
+      const data = await res.json();
+      setApplicationStatus(data?.applicationStatus || "not_applied");
+    } catch (err) {
+      console.error("Error fetching user data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [isConnected, address]);
+
+  console.log(applicationStatus)
+
+  useEffect(() => {
+    fetchUserData();
+
+     // Mock recent activity data
+     setRecentActivity([
+      { id: 1, type: "ai_chat", date: "2 hours ago", title: "Follow-up questions" },
+      { id: 2, type: "premium_view", date: "1 day ago", title: "Viewed specialists" },
+    ]);
+  }, [fetchUserData]);
+
+  useEffect(() => {
+    if (applicationStatus === "approved") {
+      router.push("/anopro-dashboard");
+    }
+  }, [applicationStatus, router]);
+
 
   // Initialize Lit client
   useEffect(() => {
-    async function initLitClient() {
-      const client = new LitNodeClient();
-      try {
-        await client.connect();
-        setLitClient(client);
-      } catch (error) {
-        console.error("Failed to initialize Lit client:", error);
-      }
-    }
+    const initLitClient = async () => {
+      const client = new LitNodeClient({ litNetwork: LIT_NETWORK.DatilDev });
+      await client.connect();
+      setLitClient(client);
+    };
     initLitClient();
   }, []);
 
-  const accessControlConditions = [
+  // Access control conditions for file encryption
+  // This is a placeholder. You should replace it with your actual access control conditions.
+  // The contract address and method should be replaced with your the actual contract and method.
+  const getAccessControlConditions = (): AccessControlConditions => [
     {
-      contractAddress: ANOCARE_CONTRACT_ADDRESS, 
-      standardContractType: "custom",                
-      chain: "arbSepolia",                            
-      method: "isAdmin",                             
-      parameters: [":userAddress"],                  
+      contractAddress: ANOCARE_CONTRACT_ADDRESS,
+      standardContractType: "",
+      chain: "arbitrumSepolia",
+      method: "admins",
+      parameters: [":userAddress"],
       returnValueTest: {
-        comparator: "==",
+        comparator: "=",
         value: "true",
       },
     },
   ];
 
-  useEffect(() => {
-    if (address) {
-      setForm(prev => ({ ...prev, address }));
-    }
-  }, [address]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-  };
+  // Handle file upload
+  // This function encrypts the file and uploads it to Web3.Storage
+  // It then updates the form state with the file data
+  // The file data includes the CID and the encryption key
+  // The CID is used to retrieve the file from IPFS
+  // The encryption key is used to decrypt the file
+  const handleFileUpload = useCallback(
+    async (file: File, field: "licenseFile" | "nationalIdFile") => {
+      if (!litClient || !address) return alert("Please connect your wallet first");
 
-  const handleFileUpload = async (
-    file: File,
-    field: "licenseFile" | "nationalIdFile"
-  ) => {
-    if (!litClient || !address) {
-      alert("Please connect your wallet first");
-      return;
-    }
+      try {
+        if (file.size > 5 * 1024 * 1024) console.log("File size exceeds 5MB limit");
 
-    try {
-      if (file.size > 5 * 1024 * 1024) {
-        throw new Error("File size exceeds 5MB limit");
-      }
+        const { ciphertext, dataToEncryptHash } = await encryptFile(
+          {
+            accessControlConditions: getAccessControlConditions(),
+            file,
+            chain: "arbitrumSepolia",
+          },
+          litClient 
+        );
+        
+        // Upload the encrypted file to NFT.Storage
+        const encryptedFile = new File([ciphertext], file.name || `${field}-${Date.now()}.bin`);
 
-      if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-        throw new Error("Please enter a valid email address");
-      }
-
-      const authSig = await LitNodeClient.checkAndSignAuthMessage({
-        chain: "arbSepolia",
-      });
-
-      const { encryptedFile, symmetricKey } = await encryptFile({ file });
-      const encryptedSymmetricKey = await litClient.saveEncryptionKey({
-        accessControlConditions,
-        symmetricKey,
-        authSig,
-        chain: "arbSepolia",
-      });
-
-      const client = await create();
-      await client.login(form.email as `${string}@${string}`);
-      const space = await client.createSpace("anocare");
-      await client.setCurrentSpace(space.did());
-
-      const cid = await client.uploadFile(encryptedFile);
-      if (!cid) {
-        throw new Error("Failed to upload file to IPFS");
-      }
-
-      setForm(prev => ({
-        ...prev,
-        [field]: {
-          cid: cid.toString(),
-          key: Buffer.from(encryptedSymmetricKey).toString("base64")
+        const formData = new FormData();
+        formData.append("file", encryptedFile);
+  
+        const res = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.NEXT_PUBLIC_PINATA_JWT!}`,
+          },
+          body: formData,
+        });
+  
+        if (!res.ok) {
+          const err = await res.json();
+          console.log(err?.error?.details || "Pinata upload failed");
         }
-      }));
+  
+        const result = await res.json();
+        const cid = result.IpfsHash;
 
-    } catch (error) {
-      console.error(`${field} upload failed:`, error);
-      alert(`Upload failed: ${error instanceof Error ? error.message : "Unknown error"}`);
-    }
-  };
+        const fileData: FileData = {
+          cid,
+          key: Buffer.from(dataToEncryptHash).toString("base64"),
+        };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!address) return;
+        console.log(fileData)
 
-    setLoading(true);
-    try {
-      const response = await fetch("/api/anopro/apply", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        setForm((prev) => ({ ...prev, [field]: fileData }));
+      } catch (err) {
+        console.error(err);
+        alert(`Upload failed: ${err instanceof Error ? err.message : "Unknown error"}`);
       }
+    },
+    [litClient, address]
+  );
 
-      const data = await response.json();
-      if (!data.success) {
-        throw new Error(data.message || "Submission failed");
+  // Handle form input changes
+  // This function updates the form state with the new input values
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const { name, value } = e.target;
+      setForm((prev) => ({ ...prev, [name]: value }));
+    },
+    []
+  );
+
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!address) return;
+
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/anopro-application/${address}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) console.log(data.message || "Submission failed");
+
+        setSubmitted(true);
+        setApplicationStatus("pending");
+      } catch (err) {
+        console.error(err);
+        alert(err instanceof Error ? err.message : "Submission failed");
+      } finally {
+        setLoading(false);
       }
+    },
+    [address, form]
+  );
 
-      setSubmitted(true);
-      setApplicationStatus('pending');
-    } catch (error) {
-      console.error("Submission error:", error);
-      alert(error instanceof Error ? error.message : "Submission failed");
-    } finally {
-      setLoading(false);
-    }
+  const ApplicationStatusBanner = () => {
+    if (applicationStatus === "not_applied") return null;
+
+    const isPending = applicationStatus === "pending";
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`mb-8 p-4 rounded-xl flex items-start gap-4 ${
+          isPending
+            ? "bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800"
+            : "bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800"
+        }`}
+      >
+        <div
+          className={`p-2 rounded-full ${
+            isPending
+              ? "bg-amber-100 dark:bg-amber-800/30 text-amber-600 dark:text-amber-300"
+              : "bg-green-100 dark:bg-green-800/30 text-green-600 dark:text-green-300"
+          }`}
+        >
+          {isPending ? <ClockIcon className="h-5 w-5" /> : <CheckCircleIcon className="h-5 w-5" />}
+        </div>
+        <div>
+          <h3 className="font-medium">
+            {isPending ? "Application Under Review" : "Application Approved"}
+          </h3>
+          <p className="text-sm mt-1">
+            {isPending
+              ? "Your application is being reviewed."
+              : "Congratulations! You are now approved."}
+          </p>
+        </div>
+      </motion.div>
+    );
   };
-
-  useEffect(() => {
-    if (isConnected && address) {
-      const fetchData = async () => {
-        setLoading(true);
-        try {
-          // Simulate API calls
-          await new Promise(resolve => setTimeout(resolve, 1200));
-          setHasPremium(false);
-          setApplicationStatus('not_applied');
-          setRecentActivity([
-            { id: 1, type: 'ai_chat', date: '2 hours ago', title: 'Follow-up questions' },
-            { id: 2, type: 'premium_view', date: '1 day ago', title: 'Viewed specialists' }
-          ]);
-        } catch (error) {
-          console.error("Data fetch error:", error);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchData();
-    }
-  }, [isConnected, address]);
-
 
   if (!isConnected) {
     return (
@@ -240,9 +318,7 @@ const UserDashboard = () => {
             <SparklesIcon className="h-12 w-12 text-primary" />
           </div>
           <h2 className="text-2xl font-bold">Welcome to Anocare</h2>
-          <p className="text-gray-500 max-w-md">
-            Please connect your wallet to access services
-          </p>
+          <p className="text-gray-500 max-w-md">Please connect your wallet to access services</p>
         </motion.div>
       </AnimatePresence>
     );
@@ -260,50 +336,10 @@ const UserDashboard = () => {
     );
   }
 
-  const ApplicationStatusBanner = () => {
-    if (applicationStatus === 'not_applied') return null;
-    
-    return (
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={`mb-8 p-4 rounded-xl flex items-start gap-4 ${
-          applicationStatus === 'pending' 
-            ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800'
-            : 'bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800'
-        }`}
-      >
-        <div className={`p-2 rounded-full ${
-          applicationStatus === 'pending' 
-            ? 'bg-amber-100 dark:bg-amber-800/30 text-amber-600 dark:text-amber-300'
-            : 'bg-green-100 dark:bg-green-800/30 text-green-600 dark:text-green-300'
-        }`}>
-          {applicationStatus === 'pending' ? (
-            <ClockIcon className="h-5 w-5" />
-          ) : (
-            <CheckCircleIcon className="h-5 w-5" />
-          )}
-        </div>
-        <div className="flex-1">
-          <h3 className="font-medium">
-            {applicationStatus === 'pending' 
-              ? "Application Under Review" 
-              : "Application Approved"}
-          </h3>
-          <p className="text-sm mt-1">
-            {applicationStatus === 'pending' 
-              ? "Your application is being reviewed" 
-              : "Congratulations! Your account has been approved"}
-          </p>
-        </div>
-      </motion.div>
-    );
-  };
-
   return (
     <div className="min-h-screen w-[90%] mx-auto bg-gray-50 dark:bg-gray-900 p-6">
       {/* Header */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4"
@@ -315,15 +351,20 @@ const UserDashboard = () => {
           <div>
             <h1 className="text-2xl font-bold">Dashboard</h1>
             <p className="text-sm text-gray-500">
-              {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "Not connected"}
+              {address
+                ? `${address.slice(0, 6)}...${address.slice(-4)}`
+                : "Not connected"}
             </p>
           </div>
         </div>
-        <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-          hasPremium ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
-          : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
-        }`}>
-          {hasPremium ? 'Premium' : 'Free Tier'}
+        <div
+          className={`px-3 py-1 rounded-full text-sm font-medium ${
+            hasPremium
+              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+              : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
+          }`}
+        >
+          {hasPremium ? "Premium" : "Free Tier"}
         </div>
       </motion.div>
 
@@ -391,9 +432,8 @@ const UserDashboard = () => {
                 className="inline-flex items-center justify-center w-full bg-accent px-4 py-3 rounded-lg shadow-sm hover:bg-accent/90 transition-colors"
               >
                 <span className="flex items-center gap-2 text-white font-medium text-sm">
-                Start Chat
+                  Start Chat
                 </span>
-
               </Link>
             </motion.div>
 
@@ -407,16 +447,16 @@ const UserDashboard = () => {
                   <UserGroupIcon className="h-6 w-6 text-primary" />
                 </div>
                 <h3 className="font-semibold text-lg">
-                  {applicationStatus === 'approved' ? 'AnoPro Portal' : 'Become Anocare Professional'}
-                </h3>
-              </div>
-              {applicationStatus === 'approved' ? (
-                <Link
-                  href="/anopro-dashboard"
-                  className="inline-flex items-center justify-center w-full bg-primary text-white px-4 py-3 rounded-lg text-sm font-medium shadow-sm hover:bg-primary/90 transition-colors"
+                  Become Anocare Professional
+                  </h3>
+                  </div>
+              {applicationStatus === "pending" ? (
+                <button
+                  className="inline-flex items-center justify-center w-full bg-gray-500 text-white px-4 py-3 rounded-lg text-sm font-medium shadow-sm hover:bg-black/90 transition-colors"
+                  disabled={applicationStatus === "pending"}
                 >
-                  Go to Dashboard
-                </Link>
+                  Pending Approval
+                </button>
               ) : (
                 <button
                   onClick={() => setShowApplicationForm(true)}
@@ -429,17 +469,18 @@ const UserDashboard = () => {
           </div>
 
           {/* Recent Activity */}
-          <motion.div 
-            className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700"
-          >
+          <motion.div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
             <h3 className="font-semibold text-lg mb-4">Recent Activity</h3>
             {recentActivity.length > 0 ? (
               <div className="space-y-3">
-                {recentActivity.map(activity => (
-                  <div key={activity.id} className="flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                {recentActivity.map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
                     <div className="flex-shrink-0 mr-4">
                       <div className="h-10 w-10 rounded-full flex items-center justify-center bg-gray-100 dark:bg-gray-700">
-                        {activity.type === 'ai_chat' ? (
+                        {activity.type === "ai_chat" ? (
                           <ChatBubbleBottomCenterTextIcon className="h-5 w-5 text-accent" />
                         ) : (
                           <UserGroupIcon className="h-5 w-5 text-primary" />
@@ -454,7 +495,9 @@ const UserDashboard = () => {
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 text-center py-8">No recent activity</p>
+              <p className="text-gray-500 text-center py-8">
+                No recent activity
+              </p>
             )}
           </motion.div>
         </>

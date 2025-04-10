@@ -2,12 +2,8 @@ import React from "react";
 import { styles } from "@/app/styles/styles";
 
 interface FileData {
-  file: File;
-  encryptedData?: ArrayBuffer;
-  iv?: Uint8Array;
-  key?: CryptoKey;
-  cid?: string;
-  encryptionKey?: string;
+  cid: string; // IPFS CID
+  key: string; // base64-encoded encrypted symmetric key
 }
 
 interface AnoProFormData {
@@ -19,6 +15,7 @@ interface AnoProFormData {
   message: string;
   experience: string;
   credentials: string;
+  status?: string;
   licenseIssuer: string;
   licenseFile?: FileData | null;
   nationalIdFile?: FileData | null;
@@ -40,15 +37,15 @@ interface AnoProApplyProps {
   setShowApplicationForm: (value: boolean) => void;
 }
 
-function ApplyAnoPro({
+const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
   submitted,
   form,
   loading,
   handleChange,
   handleSubmit,
   handleFileUpload,
-  setShowApplicationForm
-}: AnoProApplyProps) {
+  setShowApplicationForm,
+}) => {
   const onFileChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
     field: "licenseFile" | "nationalIdFile"
@@ -86,11 +83,13 @@ function ApplyAnoPro({
           your credentials and experience to begin the verification process.
         </p>
 
-        <div
+        <button
           onClick={() => setShowApplicationForm(false)}
-        className="border rounded-3xl px-4 absolute right-0 bottom-0 text-sm text-gray-500 bg-gray-50 dark:bg-gray-800 dark:text-gray-400 border-gray-500/25 shadow-lg cursor-pointer hover:scale-95">
+          className="border rounded-3xl px-4 py-2 absolute right-0 bottom-0 text-sm text-gray-500 bg-gray-50 dark:bg-gray-800 dark:text-gray-400 border-gray-500/25 shadow-lg cursor-pointer hover:scale-95 transition-transform"
+          type="button"
+        >
           Go back
-        </div>
+        </button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -191,6 +190,22 @@ function ApplyAnoPro({
         </div>
 
         <div>
+          <label htmlFor="licenseIssuer" className={styles.label}>
+            License Issuer
+          </label>
+          <input
+            id="licenseIssuer"
+            name="licenseIssuer"
+            type="text"
+            value={form.licenseIssuer}
+            onChange={handleChange}
+            className={styles.input}
+            placeholder="Enter your license issuing organization"
+            required
+          />
+        </div>
+
+        <div>
           <label htmlFor="licenseUpload" className={styles.label}>
             License or Certificate Upload
           </label>
@@ -204,7 +219,7 @@ function ApplyAnoPro({
           />
           {form.licenseFile && (
             <p className="text-green-600 text-sm mt-2">
-              ✅ {form.licenseFile.file.name} uploaded successfully
+              ✅ License upload successful. CID: {form.licenseFile.cid}
             </p>
           )}
         </div>
@@ -223,15 +238,29 @@ function ApplyAnoPro({
           />
           {form.nationalIdFile && (
             <p className="text-green-600 text-sm mt-2">
-              ✅ {form.nationalIdFile.file.name} uploaded successfully
+              ✅ National ID upload successful. CID: {form.nationalIdFile.cid}
             </p>
           )}
+        </div>
+
+        <div>
+          <label htmlFor="message" className={styles.label}>
+            Message (Optional)
+          </label>
+          <textarea
+            id="message"
+            name="message"
+            value={form.message}
+            onChange={handleChange}
+            className={`${styles.input} min-h-[100px]`}
+            placeholder="Add any additional information..."
+          />
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className={`${styles.button} ${
+          className={`${styles.button!} ${
             loading ? "opacity-50 cursor-not-allowed" : ""
           }`}
         >
@@ -240,6 +269,6 @@ function ApplyAnoPro({
       </form>
     </div>
   );
-}
+};
 
 export default ApplyAnoPro;

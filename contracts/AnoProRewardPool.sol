@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-interface IPremiumMembershipNFT {
+interface IAnoPassNFT {
     function balanceOf(address owner) external view returns (uint256);
 }
 
-interface IAnoProVerifier {
+interface IVerifiedAnoProNFT {
     function isVerified(address anoPro) external view returns (bool);
 }
 
-interface IAnoProContract {
+interface IAnocareContract {
     function isActiveCase(
         uint256 caseId,
         address anoPro,
         address patient
     ) external view returns (bool);
 
-    function consultationFee() external view returns (uint256);
+    function consultationFeeInTokens() external view returns (uint256);
     function anoProFeePercentage() external view returns (uint256);
 
     function getAnoPro(address _anoPro) external view returns (
@@ -24,16 +24,15 @@ interface IAnoProContract {
         uint256 rating,
         uint256 totalCases,
         uint256 totalRatings,
-        uint256 earnings,
-        string memory specialization
+        uint256 earnings
     );
 }
 
 contract AnoProRewardPool {
     address public owner;
-    IPremiumMembershipNFT public premiumNFT;
-    IAnoProVerifier public anoProVerifier;
-    IAnoProContract public anoProContract;
+    IAnoPassNFT public anoPassNFT;
+    IVerifiedAnoProNFT public verifiedAnoProNFT;
+    IAnocareContract public anocareContract;
 
     uint256 public totalDeposited;
 
@@ -45,7 +44,7 @@ contract AnoProRewardPool {
     }
 
     modifier onlyVerifiedAnoPro() {
-        require(anoProVerifier.isVerified(msg.sender), "Not a verified AnoPro");
+        require(verifiedAnoProNFT.isVerified(msg.sender), "Not a verified AnoPro");
         _;
     }
 
@@ -53,15 +52,15 @@ contract AnoProRewardPool {
     event PremiumConsultRecorded(address indexed anoPro, address indexed premiumUser, uint256 reward);
     event RewardClaimed(address indexed anoPro, uint256 amount);
 
-    constructor(address _nft, address _verifier, address _anoProContract) {
-        require(_nft != address(0), "Invalid NFT address");
-        require(_verifier != address(0), "Invalid verifier address");
-        require(_anoProContract != address(0), "Invalid contract address");
+    constructor(address _anoPassNFT, address _verifiedAnoProNFT, address _anocareContract) {
+        require(_anoPassNFT != address(0), "Invalid NFT address");
+        require(_verifiedAnoProNFT != address(0), "Invalid verifier address");
+        require(_anocareContract != address(0), "Invalid contract address");
 
         owner = msg.sender;
-        premiumNFT = IPremiumMembershipNFT(_nft);
-        anoProVerifier = IAnoProVerifier(_verifier);
-        anoProContract = IAnoProContract(_anoProContract);
+        anoPassNFT = IAnoPassNFT(_anoPassNFT);
+        verifiedAnoProNFT = IVerifiedAnoProNFT(_verifiedAnoProNFT);
+        anocareContract = IAnocareContract(_anocareContract);
     }
 
     receive() external payable {
@@ -70,11 +69,11 @@ contract AnoProRewardPool {
     }
 
     function recordConsult(uint256 caseId, address anoPro, address premiumUser) external {
-        require(premiumNFT.balanceOf(premiumUser) > 0, "User is not premium");
-        require(anoProVerifier.isVerified(anoPro), "AnoPro not verified");
-        require(anoProContract.isActiveCase(caseId, anoPro, premiumUser), "No active case found");
+        require(anoPassNFT.balanceOf(premiumUser) > 0, "User is not premium");
+        require(verifiedAnoProNFT.isVerified(anoPro), "AnoPro not verified");
+        require(anocareContract.isActiveCase(caseId, anoPro, premiumUser), "No active case found");
 
-        uint256 rewardPerConsult = (anoProContract.consultationFee() * anoProContract.anoProFeePercentage()) / 100;
+        uint256 rewardPerConsult = (anocareContract.consultationFeeInTokens() * anocareContract.anoProFeePercentage()) / 100;
         anoProPremiumRewards[anoPro] += rewardPerConsult;
 
         emit PremiumConsultRecorded(anoPro, premiumUser, rewardPerConsult);
