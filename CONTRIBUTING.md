@@ -22,7 +22,7 @@ We label beginner-friendly issues with `good first issue`. Check the [issues pag
 
 ## Community
 
-Discuss ideas and proposals in the [GitHub Discussions](https://github.com/sahadevgh/anocare-dapp/discussions) tab.
+Discuss ideas and proposals in the [Telegram Discussions](https://t.me/+eE9KX6qGL2YxYjVk) tab.
 
 ---
 
