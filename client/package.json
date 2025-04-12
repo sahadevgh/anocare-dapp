@@ -19,6 +19,7 @@
     "@rainbow-me/rainbowkit": "^2.2.4",
     "@web3-storage/w3up-client": "^17.2.0",
     "cloudinary": "^2.6.0",
+    "crypto-js": "^4.2.0",
     "ethers": "^6.13.5",
     "framer-motion": "^12.6.3",
     "mongoose": "^8.13.0",
@@ -34,8 +35,9 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.0.16",
+    "@types/crypto-js": "^4.2.2",
     "@types/mongoose": "^5.11.96",
-    "@types/node": "^20",
+    "@types/node": "^22.14.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

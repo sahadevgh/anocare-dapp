@@ -3,67 +3,67 @@ import { Schema, model, models } from "mongoose";
 const FileSchema = new Schema({
   cid: {
     type: String,
-    required: true, // IPFS CID of the encrypted file
+    required: true
   },
   key: {
-    type: String, // Encrypted symmetric key (Base64 or JWK)
-    required: true,
+    type: String,
+    required: true
   }
 }, { _id: false });
 
-const UserSchema = new Schema(
-  {
-    address: {
-      type: String,
-      required: true,
-      unique: true
-    },
-    alias: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    email: {
-      type: String,
-      required: true,
-    },
-    specialty: {
-      type: String,
-    },
-    region: {
-      type: String,
-    },
-    message: {
-      type: String,
-    },
-    experience: {
-      type: String,
-    },
-    credentials: {
-      type: String,
-    },
-    licenseIssuer: {
-      type: String,
-    },
-    licenseFile: {
-      type: FileSchema,
-    },
-    nationalIdFile: {
-      type: FileSchema,
-    },
-    status: {
-      type: String,
-      enum: ["pending", "approved", "rejected"],
-      default: "pending",
-    },
-    isActive: {
-      type: Boolean,
-      default: false,
-    },
+const UserSchema = new Schema({
+  address: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true
   },
-  { timestamps: true }
-);
+  alias: {
+    type: String,
+    required: true
+  },
+  email: {
+    type: String,
+    required: true
+  },
+  specialty: {
+    type: String,
+    required: true
+  },
+  region: {
+    type: String,
+    required: true
+  },
+  message: {
+    type: String,
+    required: false
+  },
+  experience: {
+    type: String,
+    required: true
+  },
+  credentials: {
+    type: String,
+    required: true
+  },
+  licenseIssuer: {
+    type: String,
+    required: true
+  },
+  licenseFile: {
+    type: FileSchema,
+    required: true
+  },
+  nationalIdFile: {
+    type: FileSchema,
+    required: true
+  },
+  status: {
+    type: String,
+    enum: ["pending", "approved", "rejected"],
+    default: "pending"
+  }
+}, { timestamps: true });
 
-// Export the model
-const userModel = models.User || model("User", UserSchema);
-export default userModel;
+const User = models.User || model("User", UserSchema);
+export default User;

@@ -54,18 +54,42 @@ contract AnocareContract {
     mapping(address => uint256[]) public anoProCaseIds;
     mapping(address => uint256[]) public patientCaseIds;
     mapping(uint256 => bool) public casePaid;
-    mapping(address => bool) public admins;
+    mapping(address => bool) public isAdmin;
+    address[] public adminList;
 
     event AnoProRegistered(address indexed anoPro, AnoPro details);
-    event CaseRequested(uint256 indexed caseId, address indexed patient, address indexed anoPro, uint256 fee, string description);
+    event CaseRequested(
+        uint256 indexed caseId,
+        address indexed patient,
+        address indexed anoPro,
+        uint256 fee,
+        string description
+    );
     event CaseAccepted(uint256 indexed caseId);
     event CaseRejected(uint256 indexed caseId);
     event CaseClosed(uint256 indexed caseId);
-    event RatingSubmitted(address indexed patient, address indexed anoPro, uint256 rating);
-    event PaymentProcessed(uint256 indexed caseId, address indexed patient, address indexed anoPro, uint256 amount);
-    event RefundIssued(uint256 indexed caseId, address indexed patient, uint256 amount);
+    event RatingSubmitted(
+        address indexed patient,
+        address indexed anoPro,
+        uint256 rating
+    );
+    event PaymentProcessed(
+        uint256 indexed caseId,
+        address indexed patient,
+        address indexed anoPro,
+        uint256 amount
+    );
+    event RefundIssued(
+        uint256 indexed caseId,
+        address indexed patient,
+        uint256 amount
+    );
 
-    constructor(address _verifiedAnoProNFT, address _anoPassNFT, address _paymentToken) {
+    constructor(
+        address _verifiedAnoProNFT,
+        address _anoPassNFT,
+        address _paymentToken
+    ) {
         require(_anoPassNFT != address(0), "Invalid membership NFT address");
         require(_verifiedAnoProNFT != address(0), "Invalid NFT address");
         require(_paymentToken != address(0), "Invalid token address");
@@ -76,17 +100,25 @@ contract AnocareContract {
         anoPassNFT = AnoPassNFT(_anoPassNFT);
         platformWallet = msg.sender;
         owner = msg.sender;
+        isAdmin[msg.sender] = true;
+        adminList.push(msg.sender);
     }
 
     function registerAnoPro() external {
-        require(verifiedAnoProNFT.balanceOf(msg.sender) > 0, "NFT required to register");
+        require(
+            verifiedAnoProNFT.balanceOf(msg.sender) > 0,
+            "NFT required to register"
+        );
         require(anoPros[msg.sender].wallet == address(0), "Already registered");
 
         anoPros[msg.sender] = AnoPro(msg.sender, 0, 0, 0, 0);
         emit AnoProRegistered(msg.sender, anoPros[msg.sender]);
     }
 
-    function requestCase(address _anoPro, string memory _description) external returns (uint256) {
+    function requestCase(
+        address _anoPro,
+        string memory _description
+    ) external returns (uint256) {
         require(_anoPro != address(0), "Invalid address");
         require(anoPros[_anoPro].wallet == _anoPro, "Not registered");
         require(msg.sender != _anoPro, "Self-case not allowed");
@@ -94,18 +126,41 @@ contract AnocareContract {
 
         bool hasPass = anoPassNFT.balanceOf(msg.sender) > 0;
         if (!hasPass) {
-            require(paymentToken.balanceOf(msg.sender) >= consultationFeeInTokens, "Insufficient token balance");
-            require(paymentToken.allowance(msg.sender, address(this)) >= consultationFeeInTokens, "Insufficient token allowance");
+            require(
+                paymentToken.balanceOf(msg.sender) >= consultationFeeInTokens,
+                "Insufficient token balance"
+            );
+            require(
+                paymentToken.allowance(msg.sender, address(this)) >=
+                    consultationFeeInTokens,
+                "Insufficient token allowance"
+            );
         }
 
         _caseIdCounter++;
         uint256 caseId = _caseIdCounter;
 
-        cases[caseId] = Case(caseId, _anoPro, msg.sender, consultationFeeInTokens, CaseStatus.Pending, false, false, block.timestamp, _description);
+        cases[caseId] = Case(
+            caseId,
+            _anoPro,
+            msg.sender,
+            consultationFeeInTokens,
+            CaseStatus.Pending,
+            false,
+            false,
+            block.timestamp,
+            _description
+        );
         patientCaseIds[msg.sender].push(caseId);
         anoProCaseIds[_anoPro].push(caseId);
 
-        emit CaseRequested(caseId, msg.sender, _anoPro, consultationFeeInTokens, _description);
+        emit CaseRequested(
+            caseId,
+            msg.sender,
+            _anoPro,
+            consultationFeeInTokens,
+            _description
+        );
         return caseId;
     }
 
@@ -138,8 +193,14 @@ contract AnocareContract {
         uint256 platformFee = (c.consultationFee * platformFeePercentage) / 100;
         uint256 anoProFee = (c.consultationFee * anoProFeePercentage) / 100;
 
-        require(paymentToken.transfer(platformWallet, platformFee), "Platform fee failed");
-        require(paymentToken.transfer(c.anoPro, anoProFee), "AnoPro payment failed");
+        require(
+            paymentToken.transfer(platformWallet, platformFee),
+            "Platform fee failed"
+        );
+        require(
+            paymentToken.transfer(c.anoPro, anoProFee),
+            "AnoPro payment failed"
+        );
 
         anoPros[c.anoPro].earnings += anoProFee;
         casePaid[_caseId] = true;
@@ -151,7 +212,10 @@ contract AnocareContract {
         Case storage c = cases[_caseId];
         require(!casePaid[_caseId], "Already paid");
 
-        require(paymentToken.transfer(c.patient, c.consultationFee), "Refund failed");
+        require(
+            paymentToken.transfer(c.patient, c.consultationFee),
+            "Refund failed"
+        );
         casePaid[_caseId] = true;
 
         emit RefundIssued(_caseId, c.patient, c.consultationFee);
@@ -177,12 +241,26 @@ contract AnocareContract {
 
     function addAdmin(address _admin) external onlyOwner {
         require(_admin != address(0), "Invalid");
-        admins[_admin] = true;
+        require(!isAdmin[_admin], "Already an admin");
+        require(_admin != owner, "Owner cannot be added");
+
+        isAdmin[_admin] = true;
+        adminList.push(_admin);
     }
 
     function removeAdmin(address _admin) external onlyOwner {
-        require(admins[_admin], "Not admin");
-        admins[_admin] = false;
+        require(isAdmin[_admin], "Not admin");
+        require(_admin != owner, "Owner cannot be removed");
+        require(_admin != address(0), "Invalid");
+
+        isAdmin[_admin] = false;
+        for (uint256 i = 0; i < adminList.length; i++) {
+            if (adminList[i] == _admin) {
+                adminList[i] = adminList[adminList.length - 1];
+                adminList.pop();
+                break;
+            }
+        }
     }
 
     function updateConsultationFee(uint256 _fee) external onlyOwner {
@@ -200,7 +278,9 @@ contract AnocareContract {
         anoProFeePercentage = _fee;
     }
 
-    function getAnoPro(address _anoPro) external view returns (address, uint256, uint256, uint256, uint256) {
+    function getAnoPro(
+        address _anoPro
+    ) external view returns (address, uint256, uint256, uint256, uint256) {
         require(anoPros[_anoPro].wallet != address(0), "Not registered");
         AnoPro memory a = anoPros[_anoPro];
         return (a.wallet, a.rating, a.totalCases, a.totalRatings, a.earnings);
@@ -210,8 +290,23 @@ contract AnocareContract {
         return _caseIdCounter;
     }
 
-    function isActiveCase(uint256 _caseId, address _anoPro, address _patient) public view returns (bool) {
+    function isActiveCase(
+        uint256 _caseId,
+        address _anoPro,
+        address _patient
+    ) public view returns (bool) {
         Case memory c = cases[_caseId];
-        return c.anoPro == _anoPro && c.patient == _patient && (c.status == CaseStatus.Pending || c.status == CaseStatus.Accepted);
+        return
+            c.anoPro == _anoPro &&
+            c.patient == _patient &&
+            (c.status == CaseStatus.Pending || c.status == CaseStatus.Accepted);
+    }
+
+    function checkIsAdmin(address user) public view returns (bool) {
+        return isAdmin[user];
+    }
+
+    function getAdmins() public view returns (address[] memory) {
+        return adminList;
     }
 }

@@ -11,16 +11,14 @@ import {
   ArrowRightCircleIcon,
   ClockIcon,
 } from "@heroicons/react/24/outline";
+import { ethers } from "ethers";
+import CryptoJS from "crypto-js";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Buffer } from "buffer";
 import ApplyAnoPro from "../anopros/ApplyAnoPro";
-import { ANOCARE_CONTRACT_ADDRESS, ANOPASS_NFT_ADDRESS, getContract } from "../constants";
 import { AnoPassNFTContract_ABI } from "../contracts/abis";
-import { LitNodeClient } from "@lit-protocol/lit-node-client";
-import { LIT_NETWORK } from "@lit-protocol/constants";
-import { encryptFile } from "@lit-protocol/encryption";
-import type { AccessControlConditions } from "@lit-protocol/types"; 
+import { ANOPASS_NFT_ADDRESS, checkAnoTokenBalance, getContract } from "../constants";
 
 
 if (typeof window !== "undefined") {
@@ -64,7 +62,6 @@ const UserDashboard = () => {
     "not_applied" | "pending" | "approved"
   >("not_applied");
   const [showApplicationForm, setShowApplicationForm] = useState(false);
-  const [litClient, setLitClient] = useState<LitNodeClient | null>(null);
   const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
   const [submitted, setSubmitted] = useState(false);
 
@@ -142,34 +139,6 @@ const UserDashboard = () => {
   }, [applicationStatus, router]);
 
 
-  // Initialize Lit client
-  useEffect(() => {
-    const initLitClient = async () => {
-      const client = new LitNodeClient({ litNetwork: LIT_NETWORK.DatilDev });
-      await client.connect();
-      setLitClient(client);
-    };
-    initLitClient();
-  }, []);
-
-  // Access control conditions for file encryption
-  // This is a placeholder. You should replace it with your actual access control conditions.
-  // The contract address and method should be replaced with your the actual contract and method.
-  const getAccessControlConditions = (): AccessControlConditions => [
-    {
-      contractAddress: ANOCARE_CONTRACT_ADDRESS,
-      standardContractType: "",
-      chain: "arbitrumSepolia",
-      method: "admins",
-      parameters: [":userAddress"],
-      returnValueTest: {
-        comparator: "=",
-        value: "true",
-      },
-    },
-  ];
-
-
   // Handle file upload
   // This function encrypts the file and uploads it to Web3.Storage
   // It then updates the form state with the file data
@@ -178,26 +147,29 @@ const UserDashboard = () => {
   // The encryption key is used to decrypt the file
   const handleFileUpload = useCallback(
     async (file: File, field: "licenseFile" | "nationalIdFile") => {
-      if (!litClient || !address) return alert("Please connect your wallet first");
-
-      try {
-        if (file.size > 5 * 1024 * 1024) console.log("File size exceeds 5MB limit");
-
-        const { ciphertext, dataToEncryptHash } = await encryptFile(
-          {
-            accessControlConditions: getAccessControlConditions(),
-            file,
-            chain: "arbitrumSepolia",
-          },
-          litClient 
-        );
-        
-        // Upload the encrypted file to NFT.Storage
-        const encryptedFile = new File([ciphertext], file.name || `${field}-${Date.now()}.bin`);
-
-        const formData = new FormData();
-        formData.append("file", encryptedFile);
+      if (!address) return alert("Please connect your wallet first");
   
+      try {
+        // 1. Generate random symmetric key per file
+        const fileKey = ethers.hexlify(ethers.randomBytes(32));
+        
+        // 2. Encrypt file with symmetric key
+        const reader = new FileReader();
+        const encryptedContent = await new Promise<string>((resolve) => {
+          reader.onload = (e) => {
+            const encrypted = CryptoJS.AES.encrypt(
+              e.target!.result as string,
+              fileKey
+            ).toString();
+            resolve(encrypted);
+          };
+          reader.readAsDataURL(file);
+        });
+  
+        // 3. Store encrypted file in IPFS
+        const formData = new FormData();
+        formData.append("file", new Blob([encryptedContent]));
+        
         const res = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
           method: "POST",
           headers: {
@@ -206,28 +178,21 @@ const UserDashboard = () => {
           body: formData,
         });
   
-        if (!res.ok) {
-          const err = await res.json();
-          console.log(err?.error?.details || "Pinata upload failed");
-        }
+        if (!res.ok) throw new Error("IPFS upload failed");
+        const { IpfsHash: cid } = await res.json();
   
-        const result = await res.json();
-        const cid = result.IpfsHash;
-
-        const fileData: FileData = {
-          cid,
-          key: Buffer.from(dataToEncryptHash).toString("base64"),
-        };
-
-        console.log(fileData)
-
-        setForm((prev) => ({ ...prev, [field]: fileData }));
+        // 4. Update form state with file data
+        setForm(prev => ({
+          ...prev,
+          [field]: { cid, key: fileKey } 
+        }));
+  
       } catch (err) {
         console.error(err);
         alert(`Upload failed: ${err instanceof Error ? err.message : "Unknown error"}`);
       }
     },
-    [litClient, address]
+    [address]
   );
 
   // Handle form input changes
@@ -247,6 +212,12 @@ const UserDashboard = () => {
 
       setLoading(true);
       try {
+        const hasTokens = await checkAnoTokenBalance(address);
+        if (!hasTokens) {
+          alert("You must hold at least 100 ANO tokens to apply.");
+          return setLoading(false);
+        }
+
         const res = await fetch(`/api/anopro-application/${address}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -380,6 +351,7 @@ const UserDashboard = () => {
           handleSubmit={handleSubmit}
           handleFileUpload={handleFileUpload}
           setShowApplicationForm={setShowApplicationForm}
+          address={address}
         />
       ) : (
         <>

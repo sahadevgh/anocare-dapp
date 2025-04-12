@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   CheckIcon,
   XMarkIcon,
@@ -11,58 +12,116 @@ import {
   MapPinIcon,
   BriefcaseIcon,
   ShieldCheckIcon,
+  EyeIcon,
 } from "@heroicons/react/24/outline";
+
 import { motion } from "framer-motion";
-import { getContract, VERIFIED_NFT_ADDRESS } from "../constants";
-import { VerifiedClinicianNFT_ABI } from "../contracts/abis";
+import {
+  ANOCARE_CONTRACT_ADDRESS,
+  getContract,
+  VERIFIED_NFT_ADDRESS,
+} from "../constants";
 import { middleEllipsis } from "@/app/lib/middleEllipsis";
+import {
+  AnoCareContract_ABI,
+  VerifiedAnoProNFTContract_ABI,
+} from "../contracts/abis";
+import { ethers } from "ethers";
+import { get } from "http";
+import { useAccount } from "wagmi";
+
+interface FileData {
+  cid: string;
+  key: string;
+}
 
 interface Applicant {
   id: string;
+  address: string;
   alias: string;
+  email: string;
   specialty: string;
   region: string;
+  message: string;
   experience: string;
   credentials: string;
+  status?: string;
   licenseIssuer: string;
-  availability: string;
-  address: string;
-  message: string;
-  license?: {
-    public_id: string;
-    url: string;
-  };
-  status: string;
+  licenseFile?: FileData | null;
+  nationalIdFile?: FileData | null;
   isActive: boolean;
   createdAt: string;
   submittedAt: string;
 }
 
 const ReviewAnoPro = () => {
+  const { address } = useAccount();
   const [applications, setApplications] = useState<Applicant[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [decryptingFiles, setDecryptingFiles] = useState<
+    Record<string, boolean>
+  >({});
 
-  const getApplications = async () => {
+// Fetch applications on mount
+  useEffect(() => {
     setLoading(true);
+    getApplications();
+    setLoading(false);
+  }
+  , []);
+
+  // DECRYPT FUNCTION
+  const decryptFile = useCallback(
+    async (cid: string, key: string) => {
+      try {
+        // 1. Verify admin status
+        const contract = await getContract(
+          ANOCARE_CONTRACT_ADDRESS,
+          AnoCareContract_ABI
+        );
+
+        const isAdmin = await contract?.isAdmin(address);
+        if (!isAdmin) throw new Error("Admin access required");
+
+        // 3. Regenerate decryption key from signature
+        const fileKey = ethers.keccak256(ethers.toUtf8Bytes(key)).slice(0, 64); 
+
+        // 4. Decrypt files
+        const decrypt = (encrypted: string) => {
+          return CryptoJS.AES.decrypt(encrypted, fileKey).toString(
+            CryptoJS.enc.Utf8
+          );
+        };
+
+        return {
+          file: decrypt(cid),
+        };
+      } catch (error) {
+        console.error("Error decrypting file:", error);
+        throw new Error("Decryption failed");
+      }
+    },
+    [address]
+  );
+
+  const handleViewDocument = async (fileData: FileData) => {
+    setDecryptingFiles((prev) => ({ ...prev, [fileData.cid]: true }));
     try {
-      const response = await fetch("/api/get-applicants");
-      const data = await response.json();
-      setApplications(data.applicants || []);
+      const decryptedContent = await decryptFile(fileData.cid, fileData.key);
+      const blob = new Blob([decryptedContent.file], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
     } catch (error) {
-      console.error("Error fetching applications:", error);
+      console.error("Error decrypting file:", error);
     } finally {
-      setLoading(false);
+      setDecryptingFiles((prev) => ({ ...prev, [fileData.cid]: false }));
     }
   };
-
-  useEffect(() => {
-    getApplications();
-  }, []);
 
   const handleApprove = async (address: string) => {
     const contract = await getContract(
       VERIFIED_NFT_ADDRESS,
-      VerifiedClinicianNFT_ABI
+      VerifiedAnoProNFTContract_ABI
     );
     if (!contract) {
       console.error("Contract not loaded");
@@ -112,6 +171,18 @@ const ReviewAnoPro = () => {
       }
     } catch (error) {
       console.error("Error rejecting applicant:", error);
+    }
+  };
+
+  const getApplications = async () => {
+    try {
+      const response = await fetch("/api/get-applicants");
+      const data = await response.json();
+      setApplications(data.applicants || []);
+    } catch (error) {
+      console.error("Error fetching applications:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -182,7 +253,7 @@ const ReviewAnoPro = () => {
       <div className="mt-8 space-y-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {applications.map((app) => (
           <motion.div
-            key={app.id}
+            key={app.id || `${app.address}-${app.submittedAt}`} // Fallback if id missing
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
@@ -279,24 +350,40 @@ const ReviewAnoPro = () => {
                 <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                   Motivation Message
                 </h4>
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md max-w-full">
+                  <p className="text-sm text-gray-700 dark:text-gray-300 break-words">
                     {app.message}
                   </p>
                 </div>
               </div>
 
-              {app.license && (
-                <div className="mt-6">
-                  <a
-                    href={app.license.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
+              {app.licenseFile && (
+                <div className="mt-4">
+                  <button
+                    onClick={() => handleViewDocument(app.licenseFile!)}
+                    disabled={decryptingFiles[app.licenseFile.cid]}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:opacity-50"
                   >
-                    <DocumentTextIcon className="-ml-1 mr-2 h-5 w-5" />
-                    View License Document
-                  </a>
+                    <EyeIcon className="-ml-1 mr-2 h-5 w-5" />
+                    {decryptingFiles[app.licenseFile.cid]
+                      ? "Decrypting..."
+                      : "View License"}
+                  </button>
+                </div>
+              )}
+
+              {app.nationalIdFile && (
+                <div className="mt-4">
+                  <button
+                    onClick={() => handleViewDocument(app.nationalIdFile!)}
+                    disabled={decryptingFiles[app.nationalIdFile.cid]}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:opacity-50"
+                  >
+                    <EyeIcon className="-ml-1 mr-2 h-5 w-5" />
+                    {decryptingFiles[app.nationalIdFile.cid]
+                      ? "Decrypting..."
+                      : "View ID Document"}
+                  </button>
                 </div>
               )}
 

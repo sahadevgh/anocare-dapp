@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { styles } from "@/app/styles/styles";
+import { checkAnoTokenBalance } from "../constants";
+import { motion } from "framer-motion";
 
 interface FileData {
   cid: string; // IPFS CID
@@ -35,6 +37,7 @@ interface AnoProApplyProps {
     field: "licenseFile" | "nationalIdFile"
   ) => Promise<void>;
   setShowApplicationForm: (value: boolean) => void;
+  address?: string;
 }
 
 const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
@@ -45,7 +48,10 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
   handleSubmit,
   handleFileUpload,
   setShowApplicationForm,
+  address,
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [ownsAnoToken, setOwnsToken] = useState(false);
   const onFileChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
     field: "licenseFile" | "nationalIdFile"
@@ -64,6 +70,30 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
       );
     }
   };
+
+  useEffect(() => {
+    setIsLoading(true);
+    const checkBalance = async () => {
+      if (!address) return;
+      const isAnoHolder = await checkAnoTokenBalance(address);
+      setOwnsToken(isAnoHolder);
+    };
+
+    checkBalance();
+    setIsLoading(false);
+  }, [address]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent"
+        />
+      </div>
+    );
+  }
 
   if (submitted) {
     return (
@@ -93,6 +123,13 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {!ownsAnoToken && (
+          <div className="bg-red-50 border border-red-300 text-red-700 p-3 rounded text-sm">
+            🚫 You must hold at least <strong>100 ANO</strong> tokens to apply
+            as an AnoPro.
+          </div>
+        )}
+
         <div>
           <label htmlFor="alias" className={styles.label}>
             Alias
@@ -106,6 +143,7 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
             className={styles.input}
             placeholder="DrHopeful"
             required
+            disabled={!ownsAnoToken}
           />
         </div>
 
@@ -122,6 +160,7 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
             className={styles.input}
             placeholder="user@example.com"
             required
+            disabled={!ownsAnoToken}
           />
         </div>
 
@@ -138,6 +177,7 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
             className={styles.input}
             placeholder="e.g., Mental Health, Nutrition"
             required
+            disabled={!ownsAnoToken}
           />
         </div>
 
@@ -154,6 +194,7 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
             className={styles.input}
             placeholder="e.g., West Africa"
             required
+            disabled={!ownsAnoToken}
           />
         </div>
 
@@ -170,6 +211,7 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
             className={styles.input}
             placeholder="e.g., 5 years"
             required
+            disabled={!ownsAnoToken}
           />
         </div>
 
@@ -186,6 +228,7 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
             className={styles.input}
             placeholder="Enter registration/license ID"
             required
+            disabled={!ownsAnoToken}
           />
         </div>
 
@@ -202,6 +245,7 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
             className={styles.input}
             placeholder="Enter your license issuing organization"
             required
+            disabled={!ownsAnoToken}
           />
         </div>
 
@@ -216,6 +260,7 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
             className={styles.input}
             onChange={(e) => onFileChange(e, "licenseFile")}
             required
+            disabled={!ownsAnoToken}
           />
           {form.licenseFile && (
             <p className="text-green-600 text-sm mt-2">
@@ -235,6 +280,7 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
             className={styles.input}
             onChange={(e) => onFileChange(e, "nationalIdFile")}
             required
+            disabled={!ownsAnoToken}
           />
           {form.nationalIdFile && (
             <p className="text-green-600 text-sm mt-2">
@@ -254,14 +300,15 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
             onChange={handleChange}
             className={`${styles.input} min-h-[100px]`}
             placeholder="Add any additional information..."
+            disabled={!ownsAnoToken}
           />
         </div>
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !ownsAnoToken}
           className={`${styles.button!} ${
-            loading ? "opacity-50 cursor-not-allowed" : ""
+            loading || !ownsAnoToken ? "opacity-50 cursor-not-allowed" : ""
           }`}
         >
           {loading ? "Submitting..." : "Submit Application"}
