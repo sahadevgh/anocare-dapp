@@ -20,7 +20,7 @@ import {
 } from "./contracts/abis";
 import { Chain } from "wagmi/chains";
 
-type UserType = "user" | "premium" | "clinician" | "admin";
+type UserType = "user" | "premium" | "anopro" | "admin";
 
 interface ConnectBtnProps {
   setIsLoggedIn: (value: boolean) => void;
@@ -78,7 +78,7 @@ export const ConnectBtn = ({
     if (address.toLowerCase() === ADMIN_WALLET.toLowerCase()) {
       setUserType("admin");
     } else if (isClinicianNFT) {
-      setUserType("clinician");
+      setUserType("anopro");
     } else if (isPremiumNFT) {
       setUserType("premium");
     } else {

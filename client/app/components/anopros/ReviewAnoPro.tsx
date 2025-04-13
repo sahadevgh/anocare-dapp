@@ -27,8 +27,8 @@ import {
   VerifiedAnoProNFTContract_ABI,
 } from "../contracts/abis";
 import { ethers } from "ethers";
-import { get } from "http";
 import { useAccount } from "wagmi";
+import CryptoJS from "crypto-js";
 
 interface FileData {
   cid: string;
@@ -57,45 +57,42 @@ interface Applicant {
 const ReviewAnoPro = () => {
   const { address } = useAccount();
   const [applications, setApplications] = useState<Applicant[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [decryptingFiles, setDecryptingFiles] = useState<
     Record<string, boolean>
   >({});
 
-// Fetch applications on mount
+  // Fetch applications on mount
   useEffect(() => {
     setLoading(true);
     getApplications();
     setLoading(false);
-  }
-  , []);
+  }, []);
 
   // DECRYPT FUNCTION
   const decryptFile = useCallback(
     async (cid: string, key: string) => {
       try {
-        // 1. Verify admin status
         const contract = await getContract(
           ANOCARE_CONTRACT_ADDRESS,
           AnoCareContract_ABI
         );
-
         const isAdmin = await contract?.isAdmin(address);
         if (!isAdmin) throw new Error("Admin access required");
 
-        // 3. Regenerate decryption key from signature
-        const fileKey = ethers.keccak256(ethers.toUtf8Bytes(key)).slice(0, 64); 
+        const res = await fetch(`https://ipfs.io/ipfs/${cid}`);
+        const encryptedBase64 = await res.text();
 
-        // 4. Decrypt files
-        const decrypt = (encrypted: string) => {
-          return CryptoJS.AES.decrypt(encrypted, fileKey).toString(
-            CryptoJS.enc.Utf8
-          );
-        };
+        // Decrypt the file using CryptoJS
+        const decrypted = CryptoJS.AES.decrypt(encryptedBase64, key); // <== key stays string
 
-        return {
-          file: decrypt(cid),
-        };
+        const decryptedDataUrl = decrypted.toString(CryptoJS.enc.Utf8);
+
+        if (!decryptedDataUrl || decryptedDataUrl.trim() === "") {
+          throw new Error("Decryption returned empty string");
+        }
+
+        return { file: decryptedDataUrl };
       } catch (error) {
         console.error("Error decrypting file:", error);
         throw new Error("Decryption failed");
@@ -106,13 +103,36 @@ const ReviewAnoPro = () => {
 
   const handleViewDocument = async (fileData: FileData) => {
     setDecryptingFiles((prev) => ({ ...prev, [fileData.cid]: true }));
+
     try {
       const decryptedContent = await decryptFile(fileData.cid, fileData.key);
-      const blob = new Blob([decryptedContent.file], { type: "application/pdf" });
+      const dataUrl = decryptedContent.file;
+
+      if (!dataUrl.startsWith("data:")) {
+        throw new Error("Decryption output is not a valid data URL");
+      }
+
+      // Extract MIME type and base64 content
+      const [prefix, base64] = dataUrl.split(",");
+      const mimeMatch = prefix.match(/^data:(.*);base64$/);
+      if (!mimeMatch || !base64) {
+        throw new Error("Invalid base64 format");
+      }
+
+      const mimeType = mimeMatch[1]; // e.g., image/jpeg, application/pdf
+      const binaryString = atob(base64);
+      const byteArray = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        byteArray[i] = binaryString.charCodeAt(i);
+      }
+
+      // Create blob and open in new tab
+      const blob = new Blob([byteArray], { type: mimeType });
       const url = URL.createObjectURL(blob);
       window.open(url, "_blank");
     } catch (error) {
       console.error("Error decrypting file:", error);
+      alert("Could not open file. Check console for details.");
     } finally {
       setDecryptingFiles((prev) => ({ ...prev, [fileData.cid]: false }));
     }
@@ -132,21 +152,26 @@ const ReviewAnoPro = () => {
       await tx.wait();
       console.log("Minted NFT successfully");
 
-      const response = await fetch("/api/approve-applicant", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ address }),
-      });
-
-      if (response.ok) {
-        setApplications((prev) =>
-          prev.filter((app) => app.address !== address)
-        );
+      if (tx) {
+        const response = await fetch("/api/approve-applicant", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ address }),
+        });
+  
+        if (response.ok) {
+          setApplications((prev) =>
+            prev.filter((app) => app.address !== address)
+          );
+        } else {
+          console.error("Fetch failed");
+        }
       } else {
-        console.error("Approval failed");
+        console.error("Approval transaction failed");
       }
+      
     } catch (error) {
       console.error("Error approving applicant:", error);
     }
@@ -251,7 +276,7 @@ const ReviewAnoPro = () => {
       </div>
 
       <div className="mt-8 space-y-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {applications.map((app) => (
+        {applications && applications.map((app) => (
           <motion.div
             key={app.id || `${app.address}-${app.submittedAt}`} // Fallback if id missing
             initial={{ opacity: 0, y: 20 }}

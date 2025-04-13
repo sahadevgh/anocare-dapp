@@ -13,28 +13,52 @@ import {
 } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-
-const ADMIN_ADDRESS = "0xYourAdminWalletHere"; // TODO: Replace with actual admin wallet
+import { ANOCARE_CONTRACT_ADDRESS, getContract, VERIFIED_NFT_ADDRESS } from "../constants";
+import { useRouter } from "next/navigation";
+import { AnoCareContract_ABI, VerifiedAnoProNFTContract_ABI } from "../contracts/abis";
 
 const AdminDashboard = () => {
+  const router = useRouter();
   const { address, isConnected } = useAccount();
-  const [isAdmin, setIsAdmin] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [adminChecked, setAdminChecked] = useState<boolean>(false);
 
-  useEffect(() => {
-    if (isConnected && address?.toLowerCase() === ADMIN_ADDRESS.toLowerCase()) {
-    
-      // TODO: Have to replace this with the actual function
-      setTimeout(() => {
-        setIsAdmin(true);
-        setIsLoading(false);
-      }, 1000); // Simulate loading
-    } else {
-      setIsLoading(false);
+  // Check if user is an admin and redirect if so
+    const checkAdmin = async () => {
+      if (!isConnected || !address) return;
+  
+      try {
+        const anocareContract = await getContract(ANOCARE_CONTRACT_ADDRESS, AnoCareContract_ABI);
+        const anoproContract = await getContract(VERIFIED_NFT_ADDRESS, VerifiedAnoProNFTContract_ABI);
+        if (anocareContract && anoproContract) {
+          const isAdmin = await anocareContract.isAdmin(address);
+          if (isAdmin) {
+            setAdminChecked(true);
+            router.push("/dashboards/admin-dashboard");
+          } else if (await anoproContract?.isVerified(address)) {
+            router.push("/dashboards/anopro-dashboard");
+          } else {
+            router.push("/dashboards/user-dashboard");
+          }
+        }
+      } catch (err) {
+        console.error("Error checking admin status:", err);
+      }
     }
-  }, [isConnected, address]);
+  
+    useEffect(() => {
+      if (!isConnected || !address) {
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(true);
+      setAdminChecked(false);
+      checkAdmin();
+      setIsLoading(false);
+    }, [address, isConnected, router]);
 
-  if (isLoading) {
+
+  if (isLoading && isConnected && !adminChecked) {
     return (
       <div className="flex items-center justify-center h-screen">
         <motion.div
@@ -62,7 +86,7 @@ const AdminDashboard = () => {
     );
   }
 
-  if (!isAdmin) {
+  if (isLoading && isConnected && !adminChecked) {
     return (
       <AnimatePresence> 
         <motion.div 

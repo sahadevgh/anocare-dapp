@@ -60,10 +60,7 @@ export async function POST(
         { status: 409 }
       );
     }
-
-    console.log("Application data:", applicationData);
-    console.log("License file:", licenseFile);
-    console.log("National ID file:", nationalIdFile);
+    
     // Create application document
     await userModel.create({
       ...applicationData,

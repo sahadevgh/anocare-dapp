@@ -13,25 +13,51 @@ import {
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { ANOCARE_CONTRACT_ADDRESS, getContract, VERIFIED_NFT_ADDRESS } from "../constants";
+import { AnoCareContract_ABI, VerifiedAnoProNFTContract_ABI } from "../contracts/abis";
+import { useRouter } from "next/navigation";
 
 const AnoProDashboard = () => {
+  const router = useRouter();
   const { address, isConnected } = useAccount();
-  const [isVerified, setIsVerified] = useState<boolean>(false);
   const [isActive, setIsActive] = useState<boolean>(true);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [hasPendingRequests, setHasPendingRequests] = useState<boolean>(false);
+  const [isVerified, setIsVerified] = useState<boolean>(false);
 
-  // Simulated check (replace with contract call)
-  useEffect(() => {
-    if (isConnected && address) {
-      setTimeout(() => {
-        setIsVerified(true);
-        setIsActive(true);
-        setHasPendingRequests(Math.random() > 0.5);
-        setLoading(false);
-      }, 1500);
-    }
-  }, [isConnected, address]);
+  // Check if user is an admin and redirect if so
+      const checkAdmin = async () => {
+        if (!isConnected || !address) return;
+    
+        try {
+          const anocareContract = await getContract(ANOCARE_CONTRACT_ADDRESS, AnoCareContract_ABI);
+          const anoproContract = await getContract(VERIFIED_NFT_ADDRESS, VerifiedAnoProNFTContract_ABI);
+          if (anocareContract && anoproContract) {
+            const isAdmin = await anocareContract.isAdmin(address);
+            if (isAdmin) {
+              router.push("/dashboards/admin-dashboard");
+            } else if (await anoproContract?.isVerified(address)) {
+              setIsVerified(true);
+              router.push("/dashboards/anopro-dashboard");
+            } else {
+              router.push("/dashboards/user-dashboard");
+            }
+          }
+        } catch (err) {
+          console.error("Error checking admin status:", err);
+        }
+      }
+    
+      useEffect(() => {
+        if (!isConnected || !address) {
+          setIsLoading(false);
+          return;
+        }
+        setIsLoading(true);
+        checkAdmin();
+        setIsLoading(false);
+        setHasPendingRequests(false);
+      }, [address, isConnected, router]);
 
   if (!isConnected) {
     return (
@@ -51,7 +77,7 @@ const AnoProDashboard = () => {
     );
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <motion.div

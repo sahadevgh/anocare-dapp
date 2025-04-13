@@ -15,15 +15,14 @@ import { ethers } from "ethers";
 import CryptoJS from "crypto-js";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Buffer } from "buffer";
 import ApplyAnoPro from "../anopros/ApplyAnoPro";
-import { AnoPassNFTContract_ABI } from "../contracts/abis";
-import { ANOPASS_NFT_ADDRESS, checkAnoTokenBalance, getContract } from "../constants";
-
-
-if (typeof window !== "undefined") {
-  (window as typeof window & { Buffer: typeof Buffer }).Buffer = Buffer;
-}
+import { AnoCareContract_ABI, AnoPassNFTContract_ABI } from "../contracts/abis";
+import {
+  ANOCARE_CONTRACT_ADDRESS,
+  ANOPASS_NFT_ADDRESS,
+  checkAnoTokenBalance,
+  getContract,
+} from "../constants";
 
 interface Activity {
   id: number;
@@ -90,27 +89,19 @@ const UserDashboard = () => {
   // Fetch user data
   const fetchUserData = useCallback(async () => {
     if (!isConnected || !address) return;
-    setLoading(true);
-  
     try {
-      const contract = await getContract(ANOPASS_NFT_ADDRESS, AnoPassNFTContract_ABI);
-      if (contract) {
-        const isPremium = await contract.isActive(address);
-        setHasPremium(isPremium);
-      }
-  
       const res = await fetch(`/api/user/${address}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json", // ✅ Fix
         },
       });
-  
+
       if (!res.ok) {
         console.log("Failed to fetch user data");
         return;
       }
-  
+
       const data = await res.json();
       setApplicationStatus(data?.applicationStatus || "not_applied");
     } catch (err) {
@@ -120,24 +111,61 @@ const UserDashboard = () => {
     }
   }, [isConnected, address]);
 
-  console.log(applicationStatus)
+  // Check if user type and redirect if so
+  const checkUserType = async () => {
+    if (!isConnected || !address) return;
 
-  useEffect(() => {
-    fetchUserData();
-
-     // Mock recent activity data
-     setRecentActivity([
-      { id: 1, type: "ai_chat", date: "2 hours ago", title: "Follow-up questions" },
-      { id: 2, type: "premium_view", date: "1 day ago", title: "Viewed specialists" },
-    ]);
-  }, [fetchUserData]);
-
-  useEffect(() => {
-    if (applicationStatus === "approved") {
-      router.push("/anopro-dashboard");
+    try {
+      const anoPassContract = await getContract(
+        ANOPASS_NFT_ADDRESS,
+        AnoPassNFTContract_ABI
+      );
+      const contract = await getContract(
+        ANOCARE_CONTRACT_ADDRESS,
+        AnoCareContract_ABI
+      );
+      if (contract) {
+        const isAdmin = await contract.isAdmin(address);
+        const isPremium = await anoPassContract?.isActive(address);
+        if (isAdmin) {
+          router.push("/dashboards/admin-dashboard");
+        } else if (applicationStatus === "approved") {
+          router.push("/dashboards/anopro-dashboard");
+        } else if (isPremium) {
+          setHasPremium(true);
+        } else {
+          router.push("/dashboards/user-dashboard");
+        }
+      }
+    } catch (err) {
+      console.error("Error checking admin status:", err);
     }
-  }, [applicationStatus, router]);
+  };
 
+  useEffect(() => {
+    setLoading(true);
+    fetchUserData();
+    checkUserType();
+    setLoading(false);
+  }, [address, isConnected, router]);
+
+  useEffect(() => {
+    // Mock recent activity data
+    setRecentActivity([
+      {
+        id: 1,
+        type: "ai_chat",
+        date: "2 hours ago",
+        title: "Follow-up questions",
+      },
+      {
+        id: 2,
+        type: "premium_view",
+        date: "1 day ago",
+        title: "Viewed specialists",
+      },
+    ]);
+  }, []);
 
   // Handle file upload
   // This function encrypts the file and uploads it to Web3.Storage
@@ -148,11 +176,11 @@ const UserDashboard = () => {
   const handleFileUpload = useCallback(
     async (file: File, field: "licenseFile" | "nationalIdFile") => {
       if (!address) return alert("Please connect your wallet first");
-  
+
       try {
         // 1. Generate random symmetric key per file
         const fileKey = ethers.hexlify(ethers.randomBytes(32));
-        
+
         // 2. Encrypt file with symmetric key
         const reader = new FileReader();
         const encryptedContent = await new Promise<string>((resolve) => {
@@ -165,31 +193,37 @@ const UserDashboard = () => {
           };
           reader.readAsDataURL(file);
         });
-  
+
         // 3. Store encrypted file in IPFS
         const formData = new FormData();
         formData.append("file", new Blob([encryptedContent]));
-        
-        const res = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_PINATA_JWT!}`,
-          },
-          body: formData,
-        });
-  
+
+        const res = await fetch(
+          "https://api.pinata.cloud/pinning/pinFileToIPFS",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${process.env.NEXT_PUBLIC_PINATA_JWT!}`,
+            },
+            body: formData,
+          }
+        );
+
         if (!res.ok) throw new Error("IPFS upload failed");
         const { IpfsHash: cid } = await res.json();
-  
+
         // 4. Update form state with file data
-        setForm(prev => ({
+        setForm((prev) => ({
           ...prev,
-          [field]: { cid, key: fileKey } 
+          [field]: { cid, key: fileKey },
         }));
-  
       } catch (err) {
         console.error(err);
-        alert(`Upload failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+        alert(
+          `Upload failed: ${
+            err instanceof Error ? err.message : "Unknown error"
+          }`
+        );
       }
     },
     [address]
@@ -225,7 +259,8 @@ const UserDashboard = () => {
         });
 
         const data = await res.json();
-        if (!res.ok || !data.success) console.log(data.message || "Submission failed");
+        if (!res.ok || !data.success)
+          console.log(data.message || "Submission failed");
 
         setSubmitted(true);
         setApplicationStatus("pending");
@@ -261,7 +296,11 @@ const UserDashboard = () => {
               : "bg-green-100 dark:bg-green-800/30 text-green-600 dark:text-green-300"
           }`}
         >
-          {isPending ? <ClockIcon className="h-5 w-5" /> : <CheckCircleIcon className="h-5 w-5" />}
+          {isPending ? (
+            <ClockIcon className="h-5 w-5" />
+          ) : (
+            <CheckCircleIcon className="h-5 w-5" />
+          )}
         </div>
         <div>
           <h3 className="font-medium">
@@ -289,7 +328,9 @@ const UserDashboard = () => {
             <SparklesIcon className="h-12 w-12 text-primary" />
           </div>
           <h2 className="text-2xl font-bold">Welcome to Anocare</h2>
-          <p className="text-gray-500 max-w-md">Please connect your wallet to access services</p>
+          <p className="text-gray-500 max-w-md">
+            Please connect your wallet to access services
+          </p>
         </motion.div>
       </AnimatePresence>
     );
@@ -420,8 +461,8 @@ const UserDashboard = () => {
                 </div>
                 <h3 className="font-semibold text-lg">
                   Become Anocare Professional
-                  </h3>
-                  </div>
+                </h3>
+              </div>
               {applicationStatus === "pending" ? (
                 <button
                   className="inline-flex items-center justify-center w-full bg-gray-500 text-white px-4 py-3 rounded-lg text-sm font-medium shadow-sm hover:bg-black/90 transition-colors"
