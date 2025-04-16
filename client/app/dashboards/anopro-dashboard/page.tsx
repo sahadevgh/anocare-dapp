@@ -1,6 +1,6 @@
 import React from 'react'
 import ClinicianDashboard from '../../components/dashboard/AnoProDashboard'
-import { Header } from '@/app/components/commons/Header'
+import { Header } from '@/app/components/Header'
 import Footer from '@/app/components/homepage/Footer'
 
 function page() {

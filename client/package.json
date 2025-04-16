@@ -18,7 +18,9 @@
     "@lit-protocol/types": "^7.1.0",
     "@rainbow-me/rainbowkit": "^2.2.4",
     "@web3-storage/w3up-client": "^17.2.0",
+    "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.6.0",
+    "clsx": "^2.1.1",
     "crypto-js": "^4.2.0",
     "ethers": "^6.13.5",
     "framer-motion": "^12.6.3",
@@ -28,6 +30,7 @@
     "postcss": "^8.5.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.2.0",
     "tailwindcss": "^4.0.16",
     "viem": "^2.23.15",
     "wagmi": "^2.14.15"

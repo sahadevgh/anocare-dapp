@@ -37,6 +37,8 @@ export async function POST(
       { status: 400 }
     );
   }
+  console.log(body)
+
 
   try {
     const { licenseFile, nationalIdFile, ...applicationData } = body;

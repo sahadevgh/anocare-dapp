@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { styles } from "@/app/styles/styles";
 import { checkAnoTokenBalance } from "../constants";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { Button } from "../ui/Button";
 
 interface FileData {
   cid: string; // IPFS CID
@@ -52,6 +53,7 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [ownsAnoToken, setOwnsToken] = useState(false);
+
   const onFileChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
     field: "licenseFile" | "nationalIdFile"
@@ -85,11 +87,11 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
         <motion.div
           animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent"
+          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+          className="h-16 w-16 rounded-full border-4 border-blue-600 dark:border-blue-400 border-t-transparent"
         />
       </div>
     );
@@ -97,41 +99,89 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
 
   if (submitted) {
     return (
-      <div className="p-4 bg-green-100 text-green-800 rounded-md">
-        Your application has been submitted. We will review and get back to you
-        shortly.
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="max-w-2xl mx-auto px-4 py-10"
+      >
+        <div className="p-6 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-xl shadow-sm">
+          <h3 className="text-lg font-semibold text-green-800 dark:text-green-300">
+            Application Submitted
+          </h3>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">
+            Your application has been submitted. We will review and get back to
+            you shortly.
+          </p>
+          <Button
+            onClick={() => setShowApplicationForm(false)}
+            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <ArrowLeftIcon className="h-5 w-5 mr-2" />
+            Go Back
+          </Button>
+        </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-10">
-      <div className="mb-6 flex flex-col items-start relative">
-        <h1 className={styles.title}>Apply to Become a Verified AnoPro</h1>
-        <p className="text-text dark:text-gray-400 mb-4">
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+      <div className="w-full relative">
+        <Button
+          onClick={() => setShowApplicationForm(false)}
+          className="relative left-0 top-0 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+        >
+          <ArrowLeftIcon className="h-5 w-5 mr-2" />
+          Go Back
+        </Button>
+      </div>
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        className="mb-8 flex flex-col items-start relative mt-4"
+      >
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3">
+          Apply to Become a Verified AnoPro
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400 text-base sm:text-lg">
           Anocare ensures only qualified AnoPros serve on the platform. Submit
           your credentials and experience to begin the verification process.
         </p>
+      </motion.div>
 
-        <button
-          onClick={() => setShowApplicationForm(false)}
-          className="border rounded-3xl px-4 py-2 absolute right-0 bottom-0 text-sm text-gray-500 bg-gray-50 dark:bg-gray-800 dark:text-gray-400 border-gray-500/25 shadow-lg cursor-pointer hover:scale-95 transition-transform"
-          type="button"
-        >
-          Go back
-        </button>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Form */}
+      <motion.form
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        onSubmit={handleSubmit}
+        className="bg-white dark:bg-gray-800 rounded-xl p-6 sm:p-8 shadow-sm border border-gray-200 dark:border-gray-700 space-y-6"
+      >
         {!ownsAnoToken && (
-          <div className="bg-red-50 border border-red-300 text-red-700 p-3 rounded text-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 p-4 rounded-lg text-sm text-red-700 dark:text-red-300"
+          >
             🚫 You must hold at least <strong>100 ANO</strong> tokens to apply
             as an AnoPro.
-          </div>
+          </motion.div>
         )}
 
-        <div>
-          <label htmlFor="alias" className={styles.label}>
+        {/* Alias */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <label
+            htmlFor="alias"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
             Alias
           </label>
           <input
@@ -140,15 +190,23 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
             type="text"
             value={form.alias}
             onChange={handleChange}
-            className={styles.input}
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             placeholder="DrHopeful"
             required
             disabled={!ownsAnoToken}
           />
-        </div>
+        </motion.div>
 
-        <div>
-          <label htmlFor="email" className={styles.label}>
+        {/* Email */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
             Email
           </label>
           <input
@@ -157,15 +215,23 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
             type="email"
             value={form.email}
             onChange={handleChange}
-            className={styles.input}
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             placeholder="user@example.com"
             required
             disabled={!ownsAnoToken}
           />
-        </div>
+        </motion.div>
 
-        <div>
-          <label htmlFor="specialty" className={styles.label}>
+        {/* Specialty */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <label
+            htmlFor="specialty"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
             Specialty
           </label>
           <input
@@ -174,15 +240,23 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
             type="text"
             value={form.specialty}
             onChange={handleChange}
-            className={styles.input}
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             placeholder="e.g., Mental Health, Nutrition"
             required
             disabled={!ownsAnoToken}
           />
-        </div>
+        </motion.div>
 
-        <div>
-          <label htmlFor="region" className={styles.label}>
+        {/* Region */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <label
+            htmlFor="region"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
             Region of Practice
           </label>
           <input
@@ -191,15 +265,23 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
             type="text"
             value={form.region}
             onChange={handleChange}
-            className={styles.input}
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             placeholder="e.g., West Africa"
             required
             disabled={!ownsAnoToken}
           />
-        </div>
+        </motion.div>
 
-        <div>
-          <label htmlFor="experience" className={styles.label}>
+        {/* Experience */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+        >
+          <label
+            htmlFor="experience"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
             Years of Experience
           </label>
           <input
@@ -208,15 +290,23 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
             type="text"
             value={form.experience}
             onChange={handleChange}
-            className={styles.input}
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             placeholder="e.g., 5 years"
             required
             disabled={!ownsAnoToken}
           />
-        </div>
+        </motion.div>
 
-        <div>
-          <label htmlFor="credentials" className={styles.label}>
+        {/* Credentials */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+        >
+          <label
+            htmlFor="credentials"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
             Medical License Number or Credential ID
           </label>
           <input
@@ -225,15 +315,23 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
             type="text"
             value={form.credentials}
             onChange={handleChange}
-            className={styles.input}
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             placeholder="Enter registration/license ID"
             required
             disabled={!ownsAnoToken}
           />
-        </div>
+        </motion.div>
 
-        <div>
-          <label htmlFor="licenseIssuer" className={styles.label}>
+        {/* License Issuer */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+        >
+          <label
+            htmlFor="licenseIssuer"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
             License Issuer
           </label>
           <input
@@ -242,55 +340,95 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
             type="text"
             value={form.licenseIssuer}
             onChange={handleChange}
-            className={styles.input}
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             placeholder="Enter your license issuing organization"
-            required
+            required={form.licenseFile === null}
             disabled={!ownsAnoToken}
           />
-        </div>
+        </motion.div>
 
-        <div>
-          <label htmlFor="licenseUpload" className={styles.label}>
+        {/* License Upload */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.7 }}
+        >
+          <label
+            htmlFor="licenseUpload"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
             License or Certificate Upload
           </label>
           <input
             id="licenseUpload"
             type="file"
             accept=".pdf,.jpg,.jpeg,.png"
-            className={styles.input}
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 dark:file:bg-blue-900 dark:file:text-blue-400 dark:hover:file:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
             onChange={(e) => onFileChange(e, "licenseFile")}
-            required
+            required={form.nationalIdFile === null}
             disabled={!ownsAnoToken}
           />
-          {form.licenseFile && (
-            <p className="text-green-600 text-sm mt-2">
-              ✅ License upload successful. CID: {form.licenseFile.cid}
-            </p>
-          )}
-        </div>
+          <AnimatePresence>
+            {form.licenseFile && (
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+                className="text-green-600 dark:text-green-400 text-sm mt-2"
+              >
+                ✅ License upload successful. CID: {form.licenseFile.cid}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
-        <div>
-          <label htmlFor="nationalIdUpload" className={styles.label}>
+        {/* National ID Upload */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.8 }}
+        >
+          <label
+            htmlFor="nationalIdUpload"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
             Upload National ID Document
           </label>
           <input
             id="nationalIdUpload"
             type="file"
             accept=".pdf,.jpg,.jpeg,.png"
-            className={styles.input}
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 dark:file:bg-blue-900 dark:file:text-blue-400 dark:hover:file:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
             onChange={(e) => onFileChange(e, "nationalIdFile")}
             required
             disabled={!ownsAnoToken}
           />
-          {form.nationalIdFile && (
-            <p className="text-green-600 text-sm mt-2">
-              ✅ National ID upload successful. CID: {form.nationalIdFile.cid}
-            </p>
-          )}
-        </div>
+          <AnimatePresence>
+            {form.nationalIdFile && (
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+                className="text-green-600 dark:text-green-400 text-sm mt-2"
+              >
+                ✅ National ID upload successful. CID: {form.nationalIdFile.cid}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
-        <div>
-          <label htmlFor="message" className={styles.label}>
+        {/* Message */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.9 }}
+        >
+          <label
+            htmlFor="message"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
             Message (Optional)
           </label>
           <textarea
@@ -298,22 +436,29 @@ const ApplyAnoPro: React.FC<AnoProApplyProps> = ({
             name="message"
             value={form.message}
             onChange={handleChange}
-            className={`${styles.input} min-h-[100px]`}
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none min-h-[120px] disabled:opacity-50 disabled:cursor-not-allowed"
             placeholder="Add any additional information..."
             disabled={!ownsAnoToken}
           />
-        </div>
+        </motion.div>
 
-        <button
-          type="submit"
-          disabled={loading || !ownsAnoToken}
-          className={`${styles.button!} ${
-            loading || !ownsAnoToken ? "opacity-50 cursor-not-allowed" : ""
-          }`}
+        {/* Submit Button */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 1 }}
         >
-          {loading ? "Submitting..." : "Submit Application"}
-        </button>
-      </form>
+          <Button
+            type="submit"
+            className={`w-full bg-blue-600 hover:bg-blue-700 text-white ${
+              loading || !ownsAnoToken ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            disabled={loading || !ownsAnoToken}
+          >
+            {loading ? "Submitting..." : "Submit Application"}
+          </Button>
+        </motion.div>
+      </motion.form>
     </div>
   );
 };

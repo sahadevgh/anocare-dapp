@@ -13,7 +13,6 @@ import {
 } from "@heroicons/react/24/outline";
 import { ethers } from "ethers";
 import CryptoJS from "crypto-js";
-import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import ApplyAnoPro from "../anopros/ApplyAnoPro";
 import { AnoCareContract_ABI, AnoPassNFTContract_ABI } from "../contracts/abis";
@@ -23,6 +22,8 @@ import {
   checkAnoTokenBalance,
   getContract,
 } from "../constants";
+import { Button } from "../ui/Button";
+
 
 interface Activity {
   id: number;
@@ -93,7 +94,7 @@ const UserDashboard = () => {
       const res = await fetch(`/api/user/${address}`, {
         method: "GET",
         headers: {
-          "Content-Type": "application/json", // ✅ Fix
+          "Content-Type": "application/json",
         },
       });
 
@@ -147,7 +148,7 @@ const UserDashboard = () => {
     fetchUserData();
     checkUserType();
     setLoading(false);
-  }, [address, isConnected, router]);
+  }, [address, isConnected, router,]);
 
   useEffect(() => {
     // Mock recent activity data
@@ -168,20 +169,12 @@ const UserDashboard = () => {
   }, []);
 
   // Handle file upload
-  // This function encrypts the file and uploads it to Web3.Storage
-  // It then updates the form state with the file data
-  // The file data includes the CID and the encryption key
-  // The CID is used to retrieve the file from IPFS
-  // The encryption key is used to decrypt the file
   const handleFileUpload = useCallback(
     async (file: File, field: "licenseFile" | "nationalIdFile") => {
       if (!address) return alert("Please connect your wallet first");
 
       try {
-        // 1. Generate random symmetric key per file
         const fileKey = ethers.hexlify(ethers.randomBytes(32));
-
-        // 2. Encrypt file with symmetric key
         const reader = new FileReader();
         const encryptedContent = await new Promise<string>((resolve) => {
           reader.onload = (e) => {
@@ -194,7 +187,6 @@ const UserDashboard = () => {
           reader.readAsDataURL(file);
         });
 
-        // 3. Store encrypted file in IPFS
         const formData = new FormData();
         formData.append("file", new Blob([encryptedContent]));
 
@@ -212,7 +204,6 @@ const UserDashboard = () => {
         if (!res.ok) throw new Error("IPFS upload failed");
         const { IpfsHash: cid } = await res.json();
 
-        // 4. Update form state with file data
         setForm((prev) => ({
           ...prev,
           [field]: { cid, key: fileKey },
@@ -230,7 +221,6 @@ const UserDashboard = () => {
   );
 
   // Handle form input changes
-  // This function updates the form state with the new input values
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       const { name, value } = e.target;
@@ -258,14 +248,23 @@ const UserDashboard = () => {
           body: JSON.stringify(form),
         });
 
-        const data = await res.json();
-        if (!res.ok || !data.success)
-          console.log(data.message || "Submission failed");
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(errorText || "Submission failed");
+        }
+
+        const contentType = res.headers.get("content-type");
+        if (contentType?.includes("application/json")) {
+          const data = await res.json();
+          if (!data.success) {
+            throw new Error(data.message || "Submission failed");
+          }
+        }
 
         setSubmitted(true);
         setApplicationStatus("pending");
       } catch (err) {
-        console.error(err);
+        console.error("Submission error:", err);
         alert(err instanceof Error ? err.message : "Submission failed");
       } finally {
         setLoading(false);
@@ -281,35 +280,37 @@ const UserDashboard = () => {
 
     return (
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`mb-8 p-4 rounded-xl flex items-start gap-4 ${
+        transition={{ duration: 0.6 }}
+        className={`p-6 rounded-xl flex items-center gap-4 bg-gradient-to-r ${
           isPending
-            ? "bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800"
-            : "bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800"
-        }`}
+            ? "from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/30"
+            : "from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30"
+        } border border-gray-200 dark:border-gray-700 shadow-sm`}
       >
-        <div
-          className={`p-2 rounded-full ${
+        <motion.div
+          className={`p-3 rounded-full ${
             isPending
-              ? "bg-amber-100 dark:bg-amber-800/30 text-amber-600 dark:text-amber-300"
-              : "bg-green-100 dark:bg-green-800/30 text-green-600 dark:text-green-300"
+              ? "bg-amber-200 dark:bg-amber-700/50 text-amber-600 dark:text-amber-300"
+              : "bg-green-200 dark:bg-green-700/50 text-green-600 dark:text-green-300"
           }`}
+          whileHover={{ scale: 1.1 }}
         >
           {isPending ? (
-            <ClockIcon className="h-5 w-5" />
+            <ClockIcon className="h-6 w-6" />
           ) : (
-            <CheckCircleIcon className="h-5 w-5" />
+            <CheckCircleIcon className="h-6 w-6" />
           )}
-        </div>
+        </motion.div>
         <div>
-          <h3 className="font-medium">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             {isPending ? "Application Under Review" : "Application Approved"}
           </h3>
-          <p className="text-sm mt-1">
+          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
             {isPending
-              ? "Your application is being reviewed."
-              : "Congratulations! You are now approved."}
+              ? "Your application is being reviewed by our team."
+              : "Congratulations! You are now an approved AnoPro."}
           </p>
         </div>
       </motion.div>
@@ -322,14 +323,20 @@ const UserDashboard = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-center justify-center h-screen space-y-4 text-center"
+          transition={{ duration: 0.8 }}
+          className="flex flex-col items-center justify-center h-screen space-y-6 text-center bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800"
         >
-          <div className="p-4 rounded-full bg-gray-100 dark:bg-gray-800">
-            <SparklesIcon className="h-12 w-12 text-primary" />
-          </div>
-          <h2 className="text-2xl font-bold">Welcome to Anocare</h2>
-          <p className="text-gray-500 max-w-md">
-            Please connect your wallet to access services
+          <motion.div
+            className="p-4 rounded-full bg-blue-100 dark:bg-blue-900/50"
+            whileHover={{ scale: 1.1 }}
+          >
+            <SparklesIcon className="h-12 w-12 text-blue-600 dark:text-blue-400" />
+          </motion.div>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Welcome to Anocare
+          </h2>
+          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-md">
+            Please connect your wallet to access our private healthcare services.
           </p>
         </motion.div>
       </AnimatePresence>
@@ -338,183 +345,231 @@ const UserDashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
         <motion.div
           animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent"
-        />
+          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+          className="h-16 w-16 rounded-full border-4 border-blue-600 dark:border-blue-400 border-t-transparent"
+        >
+          <motion.div
+            className="absolute inset-0 flex items-center justify-center"
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <SparklesIcon className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+          </motion.div>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen w-[90%] mx-auto bg-gray-50 dark:bg-gray-900 p-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4"
-      >
-        <div className="flex items-center space-x-3">
-          <div className="p-3 rounded-lg bg-primary/10">
-            <SparklesIcon className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">Dashboard</h1>
-            <p className="text-sm text-gray-500">
-              {address
-                ? `${address.slice(0, 6)}...${address.slice(-4)}`
-                : "Not connected"}
-            </p>
-          </div>
-        </div>
-        <div
-          className={`px-3 py-1 rounded-full text-sm font-medium ${
-            hasPremium
-              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-              : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
-          }`}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-12 gap-6"
         >
-          {hasPremium ? "Premium" : "Free Tier"}
-        </div>
-      </motion.div>
-
-      <ApplicationStatusBanner />
-
-      {showApplicationForm ? (
-        <ApplyAnoPro
-          submitted={submitted}
-          setSubmitted={setSubmitted}
-          form={form}
-          loading={loading}
-          handleChange={handleChange}
-          handleSubmit={handleSubmit}
-          handleFileUpload={handleFileUpload}
-          setShowApplicationForm={setShowApplicationForm}
-          address={address}
-        />
-      ) : (
-        <>
-          {/* Membership Status */}
+          <div className="flex items-center space-x-4">
+            <motion.div
+              className="p-3 rounded-lg bg-blue-100 dark:bg-blue-900/50"
+              whileHover={{ scale: 1.1 }}
+            >
+              <SparklesIcon className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+            </motion.div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                Your Dashboard
+              </h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                {address
+                  ? `${address.slice(0, 6)}...${address.slice(-4)}`
+                  : "Not connected"}
+              </p>
+            </div>
+          </div>
           <motion.div
-            whileHover={{ scale: 1.01 }}
-            className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 mb-8"
+            className={`px-4 py-2 rounded-full text-sm font-semibold ${
+              hasPremium
+                ? "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-400"
+                : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
+            }`}
+            whileHover={{ scale: 1.05 }}
           >
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="space-y-2">
-                <h3 className="font-semibold text-lg">Membership</h3>
-                {hasPremium ? (
-                  <div className="flex items-center text-green-600 dark:text-green-400 gap-2">
-                    <CheckCircleIcon className="h-5 w-5" />
-                    <span>Premium Active</span>
-                  </div>
-                ) : (
-                  <p className="text-gray-500 text-sm">
-                    Upgrade for full access
-                  </p>
+            {hasPremium ? "Premium" : "Free Tier"}
+          </motion.div>
+        </motion.div>
+
+        <ApplicationStatusBanner />
+
+        {showApplicationForm ? (
+          <ApplyAnoPro
+            submitted={submitted}
+            setSubmitted={setSubmitted}
+            form={form}
+            loading={loading}
+            handleChange={handleChange}
+            handleSubmit={handleSubmit}
+            handleFileUpload={handleFileUpload}
+            setShowApplicationForm={setShowApplicationForm}
+            address={address}
+          />
+        ) : (
+          <>
+            {/* Membership Status */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              whileHover={{ scale: 1.01, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)" }}
+              className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 mb-8"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-2">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    Membership Status
+                  </h3>
+                  {hasPremium ? (
+                    <div className="flex items-center text-green-600 dark:text-green-400 gap-2">
+                      <CheckCircleIcon className="h-6 w-6" />
+                      <span className="text-lg">Premium Active</span>
+                    </div>
+                  ) : (
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Upgrade to unlock full access to Anocare’s features.
+                    </p>
+                  )}
+                </div>
+                {!hasPremium && (
+                  <Button
+                    asLink
+                    href="/premium"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Upgrade Now
+                    <ArrowRightCircleIcon className="ml-2 h-5 w-5" />
+                  </Button>
                 )}
               </div>
-              {!hasPremium && (
-                <Link
-                  href="/premium"
-                  className="inline-flex items-center px-6 py-3 rounded-lg bg-gradient-to-r from-primary to-primary/80 text-white font-medium shadow-sm hover:from-primary/90 hover:to-primary/70 transition-all"
-                >
-                  Upgrade
-                  <ArrowRightCircleIcon className="ml-2 h-5 w-5" />
-                </Link>
-              )}
-            </div>
-          </motion.div>
+            </motion.div>
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            {/* AI Chat Card */}
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700"
-            >
-              <div className="flex items-center space-x-4 mb-4">
-                <div className="p-3 rounded-lg bg-accent/10">
-                  <ChatBubbleBottomCenterTextIcon className="h-6 w-6 text-accent" />
-                </div>
-                <h3 className="font-semibold text-lg">AI Assistant</h3>
-              </div>
-              <Link
-                href="/chat"
-                className="inline-flex items-center justify-center w-full bg-accent px-4 py-3 rounded-lg shadow-sm hover:bg-accent/90 transition-colors"
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {/* AI Chat Card */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+                whileHover={{ scale: 1.02, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)" }}
+                className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
               >
-                <span className="flex items-center gap-2 text-white font-medium text-sm">
-                  Start Chat
-                </span>
-              </Link>
-            </motion.div>
-
-            {/* AnoPros Card */}
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700"
-            >
-              <div className="flex items-center space-x-4 mb-4">
-                <div className="p-3 rounded-lg bg-primary/10">
-                  <UserGroupIcon className="h-6 w-6 text-primary" />
+                <div className="flex items-center space-x-4 mb-4">
+                  <div className="p-3 rounded-lg bg-blue-100 dark:bg-blue-900/50">
+                    <ChatBubbleBottomCenterTextIcon className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    AI Health Assistant
+                  </h3>
                 </div>
-                <h3 className="font-semibold text-lg">
-                  Become Anocare Professional
-                </h3>
-              </div>
-              {applicationStatus === "pending" ? (
-                <button
-                  className="inline-flex items-center justify-center w-full bg-gray-500 text-white px-4 py-3 rounded-lg text-sm font-medium shadow-sm hover:bg-black/90 transition-colors"
-                  disabled={applicationStatus === "pending"}
+                <Button
+                  asLink
+                  href="/chat"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                 >
-                  Pending Approval
-                </button>
+                  Start Chat
+                </Button>
+              </motion.div>
+
+              {/* AnoPros Card */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                whileHover={{ scale: 1.02, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)" }}
+                className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+              >
+                <div className="flex items-center space-x-4 mb-4">
+                  <div className="p-3 rounded-lg bg-blue-100 dark:bg-blue-900/50">
+                    <UserGroupIcon className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    Become an AnoPro
+                  </h3>
+                </div>
+                {applicationStatus === "pending" ? (
+                  <Button
+                    className="w-full bg-gray-500 text-white cursor-not-allowed"
+                    disabled
+                  >
+                    Pending Approval
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => setShowApplicationForm(true)}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Apply Now
+                  </Button>
+                )}
+              </motion.div>
+            </div>
+
+            {/* Recent Activity */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+            >
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                Recent Activity
+              </h3>
+              {recentActivity.length > 0 ? (
+                <div className="space-y-4">
+                  {recentActivity.map((activity, index) => (
+                    <motion.div
+                      key={activity.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.5, delay: index * 0.1 }}
+                      className="flex items-center p-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <div className="flex-shrink-0 mr-4">
+                        <div className="h-12 w-12 rounded-full flex items-center justify-center bg-blue-100 dark:bg-blue-900/50">
+                          {activity.type === "ai_chat" ? (
+                            <ChatBubbleBottomCenterTextIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                          ) : (
+                            <UserGroupIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-base font-medium text-gray-900 dark:text-white">
+                          {activity.title}
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {activity.date}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
               ) : (
-                <button
-                  onClick={() => setShowApplicationForm(true)}
-                  className="inline-flex items-center justify-center w-full bg-primary text-white px-4 py-3 rounded-lg text-sm font-medium shadow-sm hover:bg-primary/90 transition-colors"
-                >
-                  Apply Now
-                </button>
+                <p className="text-gray-600 dark:text-gray-400 text-center py-8">
+                  No recent activity yet. Start exploring Anocare!
+                </p>
               )}
             </motion.div>
-          </div>
-
-          {/* Recent Activity */}
-          <motion.div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-            <h3 className="font-semibold text-lg mb-4">Recent Activity</h3>
-            {recentActivity.length > 0 ? (
-              <div className="space-y-3">
-                {recentActivity.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                  >
-                    <div className="flex-shrink-0 mr-4">
-                      <div className="h-10 w-10 rounded-full flex items-center justify-center bg-gray-100 dark:bg-gray-700">
-                        {activity.type === "ai_chat" ? (
-                          <ChatBubbleBottomCenterTextIcon className="h-5 w-5 text-accent" />
-                        ) : (
-                          <UserGroupIcon className="h-5 w-5 text-primary" />
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{activity.title}</p>
-                      <p className="text-xs text-gray-500">{activity.date}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center py-8">
-                No recent activity
-              </p>
-            )}
-          </motion.div>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 };

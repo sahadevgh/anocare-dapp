@@ -1,5 +1,5 @@
 import React from 'react'
-import { Header } from '../../../components/commons/Header'
+import { Header } from '../../../components/Header'
 import ReviewClinician from '../../../components/anopros/ReviewAnoPro'
 
 function page() {

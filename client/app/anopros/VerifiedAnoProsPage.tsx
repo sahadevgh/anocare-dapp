@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Header } from '../components/commons/Header';
+import { Header } from '../components/Header';
 import AnoProDisplay from '../components/anopros/AnoProDisplay';
 
 const anopros = [
