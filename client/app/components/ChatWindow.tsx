@@ -41,7 +41,8 @@ const AnocareChat = () => {
         sender: "ai" as const,
       };
       setMessages((prev) => [...prev, aiMsg]);
-    } catch (error) {
+    } catch (err) {
+      console.error("Chat error:", err);
       const errorMsg = {
         id: Date.now() + 2,
         text: "Something went wrong. Please try again later.",
