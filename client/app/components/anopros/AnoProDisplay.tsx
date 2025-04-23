@@ -1,6 +1,5 @@
 import React from 'react';
-import { FaUserMd, FaMapMarkerAlt, FaStar, FaBriefcaseMedical, FaCertificate, FaEnvelope, FaCheckCircle } from 'react-icons/fa';
-import { IoMdTime } from 'react-icons/io';
+import { FaUserMd, FaMapMarkerAlt, FaStar, FaCertificate, FaEnvelope, FaCheckCircle } from 'react-icons/fa';
 import { MdWork, MdHealthAndSafety } from 'react-icons/md';
 
 interface AnoPro {

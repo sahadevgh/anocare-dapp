@@ -66,7 +66,7 @@ export default function Litepaper() {
                                 type="text"
                                 placeholder="Search litepaper content..."
                                 value={searchTerm}
-                                onChange={(e: any) => setSearchTerm(e.target.value)}
+                                onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
                                 aria-label="Search litepaper content"
                             />
