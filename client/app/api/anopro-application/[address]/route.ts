@@ -1,7 +1,6 @@
-// app/api/anopro-application/[address]/route.ts
 import userModel from "@/app/backend/models/user.model";
 import connectDB from "@/app/backend/utils/mongodb";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 interface ApplicationData {
   address: string;
@@ -24,7 +23,7 @@ interface ApplicationData {
 }
 
 export async function POST(
-  req: Request,
+  req: NextRequest,
   { params }: { params: { address: string } }
 ) {
   await connectDB();
@@ -37,16 +36,13 @@ export async function POST(
       { status: 400 }
     );
   }
-  console.log(body)
-
 
   try {
     const { licenseFile, nationalIdFile, ...applicationData } = body;
 
-    // Validate required files
     if (
-      (!licenseFile?.cid && !licenseFile?.key) ||
-      (!nationalIdFile?.cid && !nationalIdFile?.key)
+      !licenseFile?.cid || !licenseFile?.key ||
+      !nationalIdFile?.cid || !nationalIdFile?.key
     ) {
       return NextResponse.json(
         { success: false, message: "Missing required files" },
@@ -54,7 +50,6 @@ export async function POST(
       );
     }
 
-    // Check for existing application
     const existing = await userModel.findOne({ address });
     if (existing) {
       return NextResponse.json(
@@ -62,18 +57,12 @@ export async function POST(
         { status: 409 }
       );
     }
-    
-    // Create application document
+
     await userModel.create({
       ...applicationData,
-      licenseFile: {
-        cid: licenseFile.cid,
-        key: licenseFile.key,
-      },
-      nationalIdFile: {
-        cid: nationalIdFile.cid,
-        key: nationalIdFile.key,
-      },
+      address,
+      licenseFile,
+      nationalIdFile,
       status: "pending",
       createdAt: new Date(),
       updatedAt: new Date(),

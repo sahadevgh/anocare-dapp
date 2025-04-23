@@ -1,16 +1,19 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { ArrowRightIcon } from '@heroicons/react/24/outline'
-import { useAccount } from 'wagmi'
+import { useAccount, useContractRead } from 'wagmi'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/app/utils/Toast'
 import { Button } from '../ui/Button'
 import { ConnectBtn } from '../WalletConnect'
 import { emojiAvatarForAddress } from '@/app/lib/emojiAvatarForAddress'
+import { ADMIN_WALLET, ANOPASS_NFT_ADDRESS, VERIFIED_NFT_ADDRESS } from '../constants'
+import { AnoPassNFTContract_ABI, VerifiedAnoProNFTContract_ABI } from '../contracts/abis'
 
+type UserType = 'user' | 'premium' | 'anopro' | 'admin'
 
 const HeroSection = () => {
   const {address, isConnected } = useAccount()
@@ -19,9 +22,44 @@ const HeroSection = () => {
   const { color: backgroundColor, emoji } = emojiAvatarForAddress(address ?? '');
 
 
+  const [userType, setUserType] = useState<UserType>('user')
+  
+    // Read NFT balances
+    const { data: isClinicianNFT } = useContractRead({
+      address: VERIFIED_NFT_ADDRESS,
+      abi: VerifiedAnoProNFTContract_ABI,
+      functionName: 'hasNFT',
+      args: address ? [address] : undefined,
+    })
+  
+    const { data: isPremiumNFT } = useContractRead({
+      address: ANOPASS_NFT_ADDRESS,
+      abi: AnoPassNFTContract_ABI,
+      functionName: 'isActive',
+      args: address ? [address] : undefined,
+    })
+  
+  
+    useEffect(() => {
+      if (!address) {
+        setUserType('user')
+        return
+      }
+  
+      if (address.toLowerCase() === ADMIN_WALLET.toLowerCase()) {
+        setUserType('admin')
+      } else if (isClinicianNFT) {
+        setUserType('anopro')
+      } else if (isPremiumNFT) {
+        setUserType('premium')
+      } else {
+        setUserType('user')
+      }
+    }, [address, isClinicianNFT, isPremiumNFT])
+
   const handleGetStarted = () => {
     if (isConnected) {
-      router.push('/dashboard')
+      router.push(`/dashboards/${userType}-dashboard`)
     } else {
       toast({
         title: 'Connect Wallet',
@@ -31,7 +69,7 @@ const HeroSection = () => {
   }
 
   return (
-    <section className="relative min-h-[80vh] bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 overflow-hidden">
+    <section className="relative min-h-screen bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 overflow-hidden flex items-center justify-center">
       <div className="absolute inset-0 opacity-10 dark:opacity-5 pointer-events-none">
         <motion.div
           className="absolute top-0 left-20 w-64 h-64 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl"
@@ -68,7 +106,7 @@ const HeroSection = () => {
             <p className="mt-6 text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-lg mx-auto md:mx-0">
               Connect anonymously with verified health professionals and access AI-powered insights, secured by blockchain.
             </p>
-            <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+            <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center md:justify-start cursor-pointer">
               {isConnected ? (
                 <Button
                   onClick={handleGetStarted}
@@ -91,7 +129,7 @@ const HeroSection = () => {
                 href="/anopros"
                 variant="outline"
                 size="lg"
-                className="text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700"
+                className="text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer"
               >
                 Explore AnoPros
               </Button>

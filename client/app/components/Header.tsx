@@ -11,6 +11,7 @@ import {
   ShieldCheckIcon,
   Bars3Icon,
   XMarkIcon,
+  DocumentIcon,
 } from '@heroicons/react/24/outline'
 import { useAccount } from 'wagmi'
 import { emojiAvatarForAddress } from '@/app/lib/emojiAvatarForAddress'
@@ -31,13 +32,18 @@ export const menuLinks: HeaderMenuLink[] = [
   },
   {
     label: 'Consult AI',
-    href: '/consult',
+    href: '/consult/anoAI',
     icon: <ChatBubbleOvalLeftEllipsisIcon className="h-5 w-5" />,
   },
   {
     label: 'AnoPros',
     href: '/anopros',
     icon: <ShieldCheckIcon className="h-5 w-5" />,
+  },
+  {
+    label: 'Litepaper',
+    href: '/litepaper',
+    icon: <DocumentIcon className="h-5 w-5" />,
   },
 ]
 

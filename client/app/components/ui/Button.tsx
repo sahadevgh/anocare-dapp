@@ -40,17 +40,17 @@ type ButtonAsButton = ButtonBaseProps &
 
 type ButtonAsLink = ButtonBaseProps &
   Omit<LinkProps, keyof ButtonBaseProps> & {
-    asLink: true
+    asLink: boolean
   }
 
-type ButtonProps = ButtonAsButton | ButtonAsLink
+type ButtonProps = (ButtonAsButton & { asLink?: false }) | (ButtonAsLink & { asLink: true })
 
 const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonProps>(
   (props, ref) => {
-    const { className, variant, size, children, ...rest } = props
+    const { className, variant, size, children, asLink, ...rest } = props
 
-    if ('asLink' in props && props.asLink) {
-      const { ...linkProps } = rest as Omit<ButtonAsLink, keyof ButtonBaseProps>
+    if (asLink) {
+      const linkProps = rest as Omit<ButtonAsLink, keyof ButtonBaseProps | 'asLink'>
       return (
         <motion.div
           whileHover={{ scale: 1.02 }}
@@ -68,7 +68,7 @@ const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonProps>(
       )
     }
 
-    const { ...buttonProps } = rest as Omit<ButtonAsButton, keyof ButtonBaseProps>
+    const buttonProps = rest as Omit<ButtonAsButton, keyof ButtonBaseProps>
 
     return (
       <motion.button
