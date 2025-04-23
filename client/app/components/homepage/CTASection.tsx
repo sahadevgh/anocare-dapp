@@ -8,12 +8,15 @@ import { useRouter } from 'next/navigation'
 import { useToast } from '@/app/utils/Toast'
 import { Button } from '../ui/Button'
 import { ConnectBtn } from '../WalletConnect'
+import { emojiAvatarForAddress } from '@/app/lib/emojiAvatarForAddress'
 
 
 const CTASection = () => {
-  const { isConnected } = useAccount()
+   const { address, isConnected } = useAccount();
+    const { color: backgroundColor, emoji } = emojiAvatarForAddress(address ?? '');
   const router = useRouter()
   const { toast } = useToast()
+
 
   const handleGetStarted = () => {
     if (isConnected) {
@@ -52,7 +55,13 @@ const CTASection = () => {
                 <ArrowRightIcon className="ml-2 h-5 w-5" />
               </Button>
             ) : (
-              <ConnectBtn />
+              <ConnectBtn 
+              backgroundColor={backgroundColor}
+              emoji={emoji}
+              isConnected={isConnected}
+              address={address}
+              
+              />
             )}
           </div>
         </motion.div>
