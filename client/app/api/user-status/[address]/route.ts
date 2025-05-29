@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/app/backend/utils/mongodb";
 import userModel from "@/app/backend/models/user.model";
 
-export async function GET(
+// This controller is used to change the status of a user between active and inactive
+export async function PUT(
   req: NextRequest,
   { params }: { params: { address: string } }
 ) {
@@ -14,16 +15,18 @@ export async function GET(
       return NextResponse.json({ success: false, message: "Address is required" });
     }
 
-    const user = await userModel.findOne({ address })
-      .select("-licenseFile -nationalIdFile -message -__v -updatedAt -email");
+    const user = await userModel.findOne({ address }).select("-__v -updatedAt");
 
     if (!user) {
       return NextResponse.json({ success: false, message: "User not found" });
     }
 
+    user.isActive = !user.isActive;
+    await user.save();
+
     return NextResponse.json({ success: true, user });
   } catch (error) {
-    console.error("Error fetching user data:", error);
+    console.error("Error changing user status:", error);
     return NextResponse.json({ success: false, message: "Internal Server Error" });
   }
 }

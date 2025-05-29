@@ -69,7 +69,7 @@ const HeroSection = () => {
   }
 
   return (
-    <section className="relative min-h-screen bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 overflow-hidden flex items-center justify-center">
+    <section className="relative min-h-[80vh] bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 overflow-hidden">
       <div className="absolute inset-0 opacity-10 dark:opacity-5 pointer-events-none">
         <motion.div
           className="absolute top-0 left-20 w-64 h-64 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl"

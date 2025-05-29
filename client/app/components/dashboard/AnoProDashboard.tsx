@@ -12,31 +12,51 @@ import {
   ArrowRightCircleIcon,
 } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from "framer-motion";
-import { ANOCARE_CONTRACT_ADDRESS, getContract, VERIFIED_NFT_ADDRESS } from "../constants";
-import { AnoCareContract_ABI, VerifiedAnoProNFTContract_ABI } from "../contracts/abis";
+import {
+  ANOCARE_CONTRACT_ADDRESS,
+  getContract,
+  VERIFIED_NFT_ADDRESS,
+} from "../constants";
+import {
+  AnoCareContract_ABI,
+  VerifiedAnoProNFTContract_ABI,
+} from "../contracts/abis";
 import { useRouter } from "next/navigation";
 import { Button } from "../ui/Button";
+import { useUserData } from "@/app/hooks/useUserData";
 
 const AnoProDashboard = () => {
   const router = useRouter();
   const { address, isConnected } = useAccount();
-  const [isActive, setIsActive] = useState<boolean>(true);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [hasPendingRequests, setHasPendingRequests] = useState<boolean>(false);
   const [isVerified, setIsVerified] = useState<boolean>(false);
+  const [isActiveLoading, setIsActiveLoading] = useState<boolean>(false);
 
-  // Check if user is an admin and redirect if so
+  const {
+    userData,
+    isLoading,
+    refetch,
+  } = useUserData();
+
   const checkAdmin = async () => {
     if (!isConnected || !address) return;
 
     try {
-      const anocareContract = await getContract(ANOCARE_CONTRACT_ADDRESS, AnoCareContract_ABI);
-      const anoproContract = await getContract(VERIFIED_NFT_ADDRESS, VerifiedAnoProNFTContract_ABI);
+      const anocareContract = await getContract(
+        ANOCARE_CONTRACT_ADDRESS,
+        AnoCareContract_ABI
+      );
+      const anoproContract = await getContract(
+        VERIFIED_NFT_ADDRESS,
+        VerifiedAnoProNFTContract_ABI
+      );
       if (anocareContract && anoproContract) {
         const isAdmin = await anocareContract.isAdmin(address);
         if (isAdmin) {
           router.push("/dashboards/admin-dashboard");
-        } else if (await anoproContract?.isVerified(address)) {
+        } else if (
+          (await anoproContract.isVerified(address)) ||
+          userData?.status === "approved"
+        ) {
           setIsVerified(true);
           router.push("/dashboards/anopro-dashboard");
         } else {
@@ -49,15 +69,93 @@ const AnoProDashboard = () => {
   };
 
   useEffect(() => {
-    if (!isConnected || !address) {
-      setIsLoading(false);
-      return;
+    const runChecks = async () => {
+      if (!isConnected || !address) return;
+      await checkAdmin();
+    };
+    runChecks();
+  }, [address, isConnected]);
+
+  const handleUserStatusChange = async () => {
+    if (!isConnected || !address) return;
+    setIsActiveLoading(true);
+    try {
+      const response = await fetch(`/api/user-status/${address}`, {
+        method: "PUT",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to change user status");
+      }
+      await refetch();
+    } catch (error) {
+      console.error("Error changing user status:", error);
+    } finally {
+      setIsActiveLoading(false);
     }
-    setIsLoading(true);
-    checkAdmin();
-    setIsLoading(false);
-    setHasPendingRequests(false);
-  }, [address, isConnected, router]);
+  };
+
+  const isActive = userData?.isActive ?? false;
+  // const hasPendingRequests = userData?.hasPendingRequests ?? false;
+  const anocareContract = async () => {
+    const anocareContract = await getContract(
+      ANOCARE_CONTRACT_ADDRESS,
+      AnoCareContract_ABI
+    );
+    return anocareContract;
+  };
+
+  const [cases, setCases] = useState<PendingCase[]>([]);
+  interface PendingCase {
+    caseId: string;
+    status: string;
+    patient: string;
+    [key: string]: string | number | boolean | undefined; // Adjust this to include all known properties of a case
+  }
+
+  const [allPendingCases, setAllPendingCases] = useState<PendingCase[]>([]);
+  const [hasPendingRequests, setHasPendingRequests] = useState(false);
+  const [earnings, setEarnings] = useState<number>(0);
+
+  useEffect(() => {
+    const fetchContractData = async () => {
+      const contract = await anocareContract();
+      const caseIds = await contract?.anoProCaseIds(address);
+      if (!caseIds) {
+        console.error("No case IDs found for this address");
+        return;
+      }
+
+      // All pending cases from the cases mapping using the case IDs
+      const allCases = await Promise.all(
+        caseIds.map(async (caseId: string) => {
+          const caseData = await contract?.cases(caseId);
+          return {
+            caseId,
+            ...caseData,
+          };
+        })
+      );
+      setCases(allCases);
+
+      const pendingCases = allCases.filter(
+        (caseData) => caseData.status === "pending"
+      );
+      setHasPendingRequests(pendingCases.length > 0);
+      setAllPendingCases(pendingCases);
+
+      const anoPro = await contract?.getAnoPro(address);
+      if (anoPro) {
+        const earnings = await contract?.getEarnings(address);
+        setEarnings(earnings);
+      }
+    };
+
+    if (isConnected && address) {
+      fetchContractData();
+    }
+  }, [isConnected, address]);
+
+
 
   if (!isConnected) {
     return (
@@ -194,7 +292,10 @@ const AnoProDashboard = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            whileHover={{ y: -5, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)" }}
+            whileHover={{
+              y: -5,
+              boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+            }}
             className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
           >
             <div className="flex items-center justify-between">
@@ -222,7 +323,10 @@ const AnoProDashboard = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            whileHover={{ y: -5, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)" }}
+            whileHover={{
+              y: -5,
+              boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+            }}
             className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
           >
             <div className="flex items-center justify-between">
@@ -231,7 +335,7 @@ const AnoProDashboard = () => {
                   Pending Requests
                 </p>
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                  {hasPendingRequests ? "2" : "0"}
+                  {allPendingCases.length}
                 </h3>
               </div>
               <div className="p-3 rounded-lg bg-amber-100 dark:bg-amber-900/50">
@@ -254,7 +358,10 @@ const AnoProDashboard = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            whileHover={{ y: -5, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)" }}
+            whileHover={{
+              y: -5,
+              boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+            }}
             className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
           >
             <div className="flex items-center justify-between">
@@ -263,7 +370,7 @@ const AnoProDashboard = () => {
                   Total Earnings
                 </p>
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                  $1,240
+                  {earnings} ETH
                 </h3>
               </div>
               <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900/50">
@@ -285,7 +392,10 @@ const AnoProDashboard = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            whileHover={{ scale: 1.02, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)" }}
+            whileHover={{
+              scale: 1.02,
+              boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+            }}
             className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
           >
             <div className="flex items-center space-x-4 mb-4">
@@ -314,14 +424,19 @@ const AnoProDashboard = () => {
                 : "You're not currently accepting new consultations."}
             </p>
             <Button
-              onClick={() => setIsActive(!isActive)}
+              onClick={handleUserStatusChange}
+              disabled={isActiveLoading}
               className={`w-full ${
-                isActive
+                !isActive
                   ? "bg-red-500 hover:bg-red-600"
                   : "bg-green-500 hover:bg-green-600"
               } text-white`}
             >
-              {isActive ? "Set Inactive" : "Set Active"}
+              {isActiveLoading
+                ? "Updating..."
+                : isActive
+                ? "Set Inactive"
+                : "Set Active"}
             </Button>
           </motion.div>
 
@@ -331,7 +446,10 @@ const AnoProDashboard = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            whileHover={{ scale: 1.02, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)" }}
+            whileHover={{
+              scale: 1.02,
+              boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+            }}
             className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
           >
             <div className="flex items-center space-x-4 mb-4">
@@ -350,10 +468,8 @@ const AnoProDashboard = () => {
             <div className="space-y-4">
               {hasPendingRequests ? (
                 <>
-                  <Button
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    View Requests (2)
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                    View Requests ({allPendingCases.length})
                   </Button>
                   <div className="flex items-center text-xs text-blue-600 dark:text-blue-400">
                     <ClockIcon className="h-4 w-4 mr-1" />
@@ -384,9 +500,9 @@ const AnoProDashboard = () => {
             Upcoming Schedule
           </h3>
           <div className="space-y-4">
-            {[1, 2].map((item, index) => (
+            {cases.map((item, index) => (
               <motion.div
-                key={item}
+                key={index}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -400,14 +516,14 @@ const AnoProDashboard = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-base font-medium text-gray-900 dark:text-white">
-                    Consultation with Patient #{item}
+                    Consultation with {item?.patient}
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Today at {item === 1 ? "2:00 PM" : "4:30 PM"}
+                    Today at {item?.scheduledDate}
                   </p>
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {item === 1 ? "Confirmed" : "Pending"}
+                  {item?.status}
                 </div>
               </motion.div>
             ))}

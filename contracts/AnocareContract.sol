@@ -37,6 +37,10 @@ contract AnocareContract {
         CaseStatus status;
         bool patientClosed;
         bool anoProClosed;
+        uint256 scheduleDate;
+        uint256 completionDate;
+        uint256 rejectionDate;
+        uint256 paymentDate;
         uint256 timestamp;
         string description;
     }
@@ -148,6 +152,10 @@ contract AnocareContract {
             CaseStatus.Pending,
             false,
             false,
+            0,
+            0,
+            0,
+            0,
             block.timestamp,
             _description
         );
@@ -164,12 +172,13 @@ contract AnocareContract {
         return caseId;
     }
 
-    function acceptCase(uint256 _caseId) external {
+    function acceptCase(uint256 _caseId, uint256 _scheduleDate) external {
         Case storage c = cases[_caseId];
         require(c.status == CaseStatus.Pending, "Not pending");
         require(msg.sender == c.anoPro, "Unauthorized");
 
         c.status = CaseStatus.Accepted;
+        c.scheduleDate = _scheduleDate;
         anoPros[msg.sender].totalCases++;
         _processPayment(_caseId);
 
@@ -182,6 +191,7 @@ contract AnocareContract {
         require(msg.sender == c.anoPro, "Unauthorized");
 
         c.status = CaseStatus.Rejected;
+        c.rejectionDate = block.timestamp;
         _issueRefund(_caseId);
         emit CaseRejected(_caseId);
     }
@@ -201,6 +211,8 @@ contract AnocareContract {
             paymentToken.transfer(c.anoPro, anoProFee),
             "AnoPro payment failed"
         );
+        
+        cases[_caseId].paymentDate = block.timestamp;
 
         anoPros[c.anoPro].earnings += anoProFee;
         casePaid[_caseId] = true;
